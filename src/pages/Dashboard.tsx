@@ -36,6 +36,7 @@ import {
   useActivityLog,
   useLowStockItems,
   useChoreAssignments,
+  useMeals
 } from '@/hooks/useQueries';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatDistanceToNow, format, isToday, isTomorrow } from 'date-fns';
@@ -65,6 +66,10 @@ export default function Dashboard() {
   const { data: activities } = useActivityLog();
   const { data: lowStockItems } = useLowStockItems();
   const { data: choreAssignments } = useChoreAssignments();
+  const { data: meals } = useMeals();
+
+  const upcomingMeals = meals?.filter((meal) => new Date(meal.date) >= new Date()) || [];
+  const todaysMeals = upcomingMeals.filter((meal) => isToday(new Date(meal.date)));
 
   // Calculate monthly expense data for chart
   const expenseChartData = expenses?.slice(0, 7).reverse().map((expense, index) => ({
@@ -196,8 +201,12 @@ export default function Dashboard() {
                   </Badge>
                 </div>
                 <p className="text-sm text-orange-100 mb-1">Meals Planned</p>
-                <p className="text-3xl font-bold">3</p>
-                <p className="text-sm text-orange-100 mt-2">Today's meal at 7 PM</p>
+                <p className="text-3xl font-bold">{upcomingMeals.length}</p>
+                <p className="text-sm text-orange-100 mt-2 truncate">
+                  {todaysMeals.length > 0
+                    ? `Today: ${todaysMeals[0].meal_name}`
+                    : 'No meals planned for today'}
+                </p>
               </CardContent>
             </Card>
           </motion.div>
@@ -370,11 +379,10 @@ export default function Dashboard() {
                         className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-900"
                       >
                         <div
-                          className={`w-2 h-12 rounded-full ${
-                            assignment.completed_at
+                          className={`w-2 h-12 rounded-full ${assignment.completed_at
                               ? 'bg-gradient-to-b from-teal-500 to-emerald-500'
                               : 'bg-gradient-to-b from-orange-500 to-amber-500'
-                          }`}
+                            }`}
                         />
                         <div className="flex-1">
                           <p className="font-medium text-slate-900 dark:text-white">

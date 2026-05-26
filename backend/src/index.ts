@@ -11,6 +11,7 @@ import loanRoutes from './routes/loanRoutes';
 import choreRoutes, { choreAssignmentRouter } from './routes/choreRoutes';
 import mealRoutes from './routes/mealRoutes';
 import inventoryRoutes from './routes/inventoryRoutes';
+import activityRoutes from './routes/activityRoutes'
 
 // Initialize Express app
 const app = express();
@@ -101,6 +102,9 @@ app.use('/api/meals', mealRoutes);
 
 // Inventory routes
 app.use('/api/inventory', inventoryRoutes);
+
+// Dashboard Activity
+app.use('/api/activity', activityRoutes);
 
 // ============ Error Handling ============
 
