@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { api } from '@/lib/api';
 import type { Profile, Household, HouseholdMember } from '@/types';
 
-interface AuthState {
+export interface AuthState {
   user: Profile | null;
   household: Household | null;
   members: HouseholdMember[];
@@ -16,6 +16,7 @@ interface AuthState {
   fetchProfile: () => Promise<void>;
   setHousehold: (household: Household | null) => void;
   fetchMembers: () => Promise<void>;
+  updateUser: (updates: Partial<Profile>) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -35,6 +36,10 @@ export const useAuthStore = create<AuthState>()(
         if (error) throw error;
         await get().fetchProfile();
       },
+
+      updateUser: (updates) => set((state) => ({
+        user: state.user ? { ...state.user, ...updates } : null
+      })),
 
       signUp: async (email: string, password: string, fullName: string) => {
         const { error } = await supabase.auth.signUp({

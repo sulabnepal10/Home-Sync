@@ -55,6 +55,8 @@ import { useTheme } from 'next-themes';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { apiClient } from '@/lib/api';
+import type { Profile } from '@/types';
 
 const themes = [
   { value: 'light', label: 'Light', icon: Sun },
@@ -64,11 +66,12 @@ const themes = [
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
-  const { user, household, members, signOut } = useAuthStore();
+  const { user, household, members, signOut, updateUser } = useAuthStore();
 
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [copied, setCopied] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const [notifications, setNotifications] = useState({
     expenses: true,
@@ -88,6 +91,26 @@ export default function Settings() {
       setCopied(true);
       toast.success('Invite code copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!fullName.trim()) {
+      toast.error('Name cannot be empty');
+      return;
+    }
+    setIsUpdating(true);
+    try {
+      const updatedProfile = await apiClient.put<Profile>('/api/profile', {
+        full_name: fullName.trim(),
+      });
+      updateUser({ full_name: updatedProfile.full_name });
+      toast.success('Profile updated successfully');
+      setEditProfileOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update profile');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -511,17 +534,15 @@ export default function Settings() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setEditProfileOpen(false)}>
+              <Button variant="outline" onClick={() => setEditProfileOpen(false)} disabled={isUpdating}>
                 Cancel
               </Button>
               <Button
-                onClick={() => {
-                  toast.success('Profile updated');
-                  setEditProfileOpen(false);
-                }}
+                onClick={handleUpdateProfile}
+                disabled={isUpdating}
                 className="bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white border-0"
               >
-                Save Changes
+                {isUpdating ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>
           </DialogContent>

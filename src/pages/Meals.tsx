@@ -9,7 +9,7 @@ import {
   Clock,
   Check,
   ChevronLeft,
-  ChevronRight,
+  ChevronRight, Trash2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,13 @@ import {
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { useMeals } from '@/hooks/useQueries';
+import {
+  useMeals,
+  useCreateMeal,
+  useJoinMeal,
+  useLeaveMeal,
+  useDeleteMeal
+} from '@/hooks/useQueries';
 import { useAuthStore } from '@/store/useAuthStore';
 import { format, startOfWeek, addDays, isToday, isSameDay, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -57,8 +63,12 @@ const mealIdeas = [
 ];
 
 export default function Meals() {
-  const { user, members } = useAuthStore();
+  const { user, members, household } = useAuthStore();
   const { data: meals, isLoading } = useMeals();
+  const createMeal = useCreateMeal();
+  const joinMeal = useJoinMeal();
+  const leaveMeal = useLeaveMeal();
+  const deleteMeal = useDeleteMeal();
   const [selectedWeek, setSelectedWeek] = useState(new Date());
   const [addMealModalOpen, setAddMealModalOpen] = useState(false);
 
@@ -284,38 +294,80 @@ export default function Meals() {
                       whileHover={{ scale: 1.02 }}
                       className="p-4 rounded-xl bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 border border-rose-200 dark:border-rose-800"
                     >
-                      <div className="flex items-center gap-2 mb-3">
-                        <Avatar>
-                          <AvatarImage src={meal.chef?.avatar_url} />
-                          <AvatarFallback className="bg-gradient-to-br from-rose-500 to-pink-500 text-white">
-                            {getInitials(meal.chef?.full_name || '')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-slate-900 dark:text-white">
-                            {meal.chef?.full_name}
-                          </p>
-                          <p className="text-xs text-slate-500">Chef</p>
+                      {/* Flex container updated to allow delete button on the right */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Avatar>
+                            <AvatarImage src={meal.chef?.avatar_url} />
+                            <AvatarFallback className="bg-gradient-to-br from-rose-500 to-pink-500 text-white">
+                              {getInitials(meal.chef?.full_name || '')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-slate-900 dark:text-white">
+                              {meal.chef?.full_name}
+                            </p>
+                            <p className="text-xs text-slate-500">Chef</p>
+                          </div>
                         </div>
+
+                        {/* Delete button (Only show if current user is the chef) */}
+                        {user?.id === meal.chef_id && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 -mt-2 -mr-2"
+                            onClick={() => {
+                              if (window.confirm('Are you sure you want to delete this meal?')) {
+                                deleteMeal.mutate(meal.id, {
+                                  onSuccess: () => toast.success('Meal deleted')
+                                });
+                              }
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
 
                       <h3 className="font-semibold text-lg text-slate-900 dark:text-white mb-2">
                         {meal.meal_name}
                       </h3>
-
                       {meal.notes && (
                         <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
                           {meal.notes}
                         </p>
                       )}
 
+                      {/* Join / Leave Button Area */}
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className="text-xs">
                           {meal.attendees?.length || 0} attending
                         </Badge>
-                        <Button size="sm" variant="ghost">
-                          <Check className="w-4 h-4 mr-1" />
-                          I'm in
+                        <Button
+                          size="sm"
+                          variant={meal.attendees?.includes(user?.id || '') ? "default" : "ghost"}
+                          disabled={joinMeal.isPending || leaveMeal.isPending}
+                          onClick={() => {
+                            if (meal.attendees?.includes(user?.id || '')) {
+                              leaveMeal.mutate(meal.id, {
+                                onSuccess: () => toast.success('You left this meal')
+                              });
+                            } else {
+                              joinMeal.mutate(meal.id, {
+                                onSuccess: () => toast.success('You joined this meal')
+                              });
+                            }
+                          }}
+                        >
+                          {meal.attendees?.includes(user?.id || '') ? (
+                            <>
+                              <Check className="w-4 h-4 mr-1" />
+                              Attending
+                            </>
+                          ) : (
+                            "I'm in"
+                          )}
                         </Button>
                       </div>
                     </motion.div>
@@ -472,21 +524,50 @@ export default function Meals() {
             </div>
 
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setAddMealModalOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setAddMealModalOpen(false)}
+                disabled={createMeal.isPending}
+              >
                 Cancel
               </Button>
               <Button
+                disabled={createMeal.isPending}
                 onClick={() => {
                   if (!mealName) {
                     toast.error('Please enter a meal name');
                     return;
                   }
-                  toast.success('Meal planned!');
-                  setAddMealModalOpen(false);
+                  if (!household?.id) {
+                    toast.error('Household ID is missing');
+                    return;
+                  }
+
+                  createMeal.mutate(
+                    {
+                      household_id: household.id,
+                      date: mealDate,
+                      meal_name: mealName,
+                      notes: notes,
+                      attendees: selectedAttendees,
+                    },
+                    {
+                      onSuccess: () => {
+                        toast.success('Meal planned!');
+                        setAddMealModalOpen(false);
+                        setMealName('');
+                        setNotes('');
+                        setSelectedAttendees([]);
+                      },
+                      onError: (error) => {
+                        toast.error(error.message || 'Failed to plan meal');
+                      }
+                    }
+                  );
                 }}
                 className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white border-0"
               >
-                Plan Meal
+                {createMeal.isPending ? 'Planning...' : 'Plan Meal'}
               </Button>
             </div>
           </DialogContent>

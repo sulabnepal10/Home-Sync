@@ -11,7 +11,7 @@ import {
   Filter,
   Battery,
   Apple,
-  Sparkles,
+  Sparkles, Minus, Trash2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,14 @@ import {
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
-import { useInventory, useLowStockItems } from '@/hooks/useQueries';
+import {
+  useInventory,
+  useLowStockItems,
+  useCreateInventoryItem,
+  useUpdateInventoryItem,
+  useRestockItem,
+  useDeleteInventoryItem
+} from '@/hooks/useQueries';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -50,6 +57,10 @@ export default function Inventory() {
   const { user, household } = useAuthStore();
   const { data: inventory, isLoading } = useInventory();
   const { data: lowStockItems } = useLowStockItems();
+  const createItem = useCreateInventoryItem();
+  const updateItem = useUpdateInventoryItem();
+  const restockItem = useRestockItem();
+  const deleteItem = useDeleteInventoryItem();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -272,22 +283,69 @@ export default function Inventory() {
                           )}
                         >
                           <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <p className="font-medium text-slate-900 dark:text-white">
+                            <div className="flex-1 pr-2">
+                              <p className="font-medium text-slate-900 dark:text-white truncate">
                                 {item.name}
                               </p>
-                              <p className="text-sm text-slate-500 dark:text-slate-400">
-                                {item.quantity} {item.unit}
-                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                  {item.quantity} {item.unit}
+                                </p>
+                                {isLowStock && (
+                                  <Badge className="bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border-0 px-1.5 py-0">
+                                    <AlertTriangle className="w-3 h-3 mr-1" />
+                                    Low
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
-                            {isLowStock && (
-                              <Badge className="bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border-0">
-                                <AlertTriangle className="w-3 h-3 mr-1" />
-                                Low
-                              </Badge>
-                            )}
-                          </div>
 
+                            {/* Action Buttons: -, +, Delete */}
+                            <div className="flex items-center gap-1 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-0.5">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-slate-500 hover:text-orange-600"
+                                disabled={updateItem.isPending || item.quantity <= 0}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Use updateItem to strictly subtract 1 without triggering a "restock" event
+                                  updateItem.mutate({ id: item.id, quantity: Math.max(0, item.quantity - 1) });
+                                }}
+                              >
+                                <Minus className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-slate-500 hover:text-teal-600"
+                                disabled={restockItem.isPending}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Use restockItem to add 1 and update the "last_purchased" timestamp
+                                  restockItem.mutate({ id: item.id, quantity: 1 });
+                                }}
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 ml-1"
+                                disabled={deleteItem.isPending}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm(`Are you sure you want to delete ${item.name}?`)) {
+                                    deleteItem.mutate(item.id, {
+                                      onSuccess: () => toast.success(`${item.name} removed`)
+                                    });
+                                  }
+                                }}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
                           <Progress
                             value={stockPercentage}
                             className={cn(
@@ -411,21 +469,53 @@ export default function Inventory() {
             </div>
 
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setAddItemModalOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setAddItemModalOpen(false)}
+                disabled={createItem.isPending}
+              >
                 Cancel
               </Button>
               <Button
+                disabled={createItem.isPending}
                 onClick={() => {
-                  if (!itemName || !itemQuantity) {
-                    toast.error('Please fill in all required fields');
+                  if (!household?.id) {
+                    toast.error('Household ID is missing');
                     return;
                   }
-                  toast.success('Item added to inventory');
-                  setAddItemModalOpen(false);
+                  if (!itemName || !itemQuantity) {
+                    toast.error('Please fill in item name and quantity');
+                    return;
+                  }
+
+                  createItem.mutate(
+                    {
+                      household_id: household.id,
+                      name: itemName,
+                      category: itemCategory as any,
+                      quantity: Number(itemQuantity),
+                      unit: itemUnit || 'units',
+                      min_quantity: Number(itemMinQuantity) || 1,
+                    },
+                    {
+                      onSuccess: () => {
+                        toast.success('Item added to inventory');
+                        setAddItemModalOpen(false);
+                        setItemName('');
+                        setItemQuantity('');
+                        setItemMinQuantity('1');
+                        setItemUnit('');
+                        setItemCategory('groceries');
+                      },
+                      onError: (error) => {
+                        toast.error(error.message || 'Failed to add item');
+                      }
+                    }
+                  );
                 }}
                 className="bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-cyan-600 hover:to-sky-600 text-white border-0"
               >
-                Add Item
+                {createItem.isPending ? 'Adding...' : 'Add Item'}
               </Button>
             </div>
           </DialogContent>

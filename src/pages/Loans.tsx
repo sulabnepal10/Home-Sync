@@ -10,7 +10,7 @@ import {
   Clock,
   Users,
   TrendingUp,
-  Handshake,
+  Handshake, Trash2
 } from 'lucide-react';
 // ForceGraph component would be implemented separately
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,18 +34,27 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useLoans, useLoanBalances } from '@/hooks/useQueries';
 import { useAuthStore } from '@/store/useAuthStore';
-import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import {
+  useLoans,
+  useLoanBalances,
+  useAddLoan,
+  useSettleLoan,
+  useDeleteLoan
+} from '@/hooks/useQueries';
 
 type BalanceRecord = Record<string, { owed: number; lent: number; net: number }>;
 
 export default function Loans() {
-  const { user, members } = useAuthStore();
+  const { user, members, household } = useAuthStore();
   const { data: loans } = useLoans();
   const { data: balances } = useLoanBalances();
+
+  const addLoan = useAddLoan();
+  const settleLoan = useSettleLoan();
+  const deleteLoan = useDeleteLoan();
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'settled' | 'pending'>('all');
@@ -375,20 +384,61 @@ export default function Loans() {
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <p className="font-semibold text-slate-900 dark:text-white">
-                          ${parseFloat(String(loan.amount)).toFixed(2)}
-                        </p>
-                        {loan.is_settled ? (
-                          <Badge className="bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 border-0">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Settled
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-0">
-                            <Clock className="w-3 h-3 mr-1" />
-                            Pending
-                          </Badge>
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="text-right">
+                          <p className="font-semibold text-slate-900 dark:text-white">
+                            ${parseFloat(String(loan.amount)).toFixed(2)}
+                          </p>
+                          {loan.is_settled ? (
+                            <Badge className="bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 border-0">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Settled
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-0">
+                              <Clock className="w-3 h-3 mr-1" />
+                              Pending
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* Action Buttons (Only show to the lender) */}
+                        {user?.id === loan.lender_id && (
+                          <div className="flex items-center gap-1 mt-1">
+                            {!loan.is_settled && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs text-teal-600 border-teal-200 hover:bg-teal-50 dark:hover:bg-teal-900/20"
+                                disabled={settleLoan.isPending}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  settleLoan.mutate(loan.id, {
+                                    onSuccess: () => toast.success('Loan marked as settled!')
+                                  });
+                                }}
+                              >
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Settle
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                              disabled={deleteLoan.isPending}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm('Are you sure you want to delete this loan?')) {
+                                  deleteLoan.mutate(loan.id, {
+                                    onSuccess: () => toast.success('Loan deleted')
+                                  });
+                                }
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         )}
                       </div>
                     </motion.div>
@@ -448,22 +498,6 @@ export default function Loans() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Lender</Label>
-                  <Select value={lenderId} onValueChange={setLenderId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select lender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {members.map((member) => (
-                        <SelectItem key={member.user_id} value={member.user_id}>
-                          {member.profile?.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
                   <Label>Borrower</Label>
                   <Select value={borrowerId} onValueChange={setBorrowerId}>
                     <SelectTrigger>
@@ -482,22 +516,55 @@ export default function Loans() {
             </div>
 
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setAddModalOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setAddModalOpen(false)}
+                disabled={addLoan.isPending}
+              >
                 Cancel
               </Button>
               <Button
+                disabled={addLoan.isPending}
                 onClick={() => {
-                  if (!amount || !description || !lenderId || !borrowerId) {
-                    toast.error('Please fill all fields');
+                  if (!household?.id) {
+                    toast.error('Household ID is missing');
                     return;
                   }
-                  // Add loan mutation would go here
-                  toast.success('Loan recorded');
-                  setAddModalOpen(false);
+                  if (!amount || !description || !borrowerId) {
+                    toast.error('Please fill all required fields');
+                    return;
+                  }
+                  if (borrowerId === user?.id) {
+                    toast.error('You cannot lend money to yourself');
+                    return;
+                  }
+
+                  addLoan.mutate(
+                    {
+                      household_id: household.id,
+                      borrower_id: borrowerId,
+                      amount: Number(amount),
+                      description: description,
+                    },
+                    {
+                      onSuccess: () => {
+                        toast.success('Loan recorded successfully!');
+                        setAddModalOpen(false);
+                        // Reset form
+                        setAmount('');
+                        setDescription('');
+                        setBorrowerId('');
+                        setLenderId('');
+                      },
+                      onError: (error) => {
+                        toast.error(error.message || 'Failed to record loan');
+                      }
+                    }
+                  );
                 }}
                 className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-0"
               >
-                Record Loan
+                {addLoan.isPending ? 'Recording...' : 'Record Loan'}
               </Button>
             </div>
           </DialogContent>

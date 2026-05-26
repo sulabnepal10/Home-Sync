@@ -10,7 +10,7 @@ import {
   Trophy,
   RotateCcw,
   ChevronLeft,
-  ChevronRight,
+  ChevronRight, Trash2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,20 +27,34 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
-import { useChoreAssignments, useCompleteChore } from '@/hooks/useQueries';
+import { useChoreAssignments, useCompleteChore, useCreateChore, useCreateChoreAssignment, useDeleteChoreAssignment } from '@/hooks/useQueries';
 import { useAuthStore } from '@/store/useAuthStore';
 import { format, startOfWeek, addDays, isToday, isSameDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function Chores() {
-  const { user, members } = useAuthStore();
+  const { user, members, household } = useAuthStore();
   const { data: assignments, isLoading } = useChoreAssignments();
   const completeChore = useCompleteChore();
+  const createChore = useCreateChore();
+  const createAssignment = useCreateChoreAssignment();
+  const deleteAssignment = useDeleteChoreAssignment();
 
   const [selectedWeek, setSelectedWeek] = useState(new Date());
   const [addChoreModalOpen, setAddChoreModalOpen] = useState(false);
   const [notes, setNotes] = useState('');
+  const [choreName, setChoreName] = useState('');
+  const [chorePoints, setChorePoints] = useState('10');
+  const [assignedUserId, setAssignedUserId] = useState(user?.id || '');
+  const [assignedDate, setAssignedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
   const getInitials = (name: string) =>
     name?.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
@@ -353,6 +367,7 @@ export default function Chores() {
                             +{assignment.chore.points} pts
                           </Badge>
                         )}
+
                         {!assignment.completed_at && assignment.user_id === user?.id && (
                           <Button
                             size="sm"
@@ -362,6 +377,24 @@ export default function Chores() {
                           >
                             <Check className="w-4 h-4 mr-1" />
                             Complete
+                          </Button>
+                        )}
+
+                        {!assignment.completed_at && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                            disabled={deleteAssignment.isPending}
+                            onClick={() => {
+                              if (window.confirm('Delete this chore assignment?')) {
+                                deleteAssignment.mutate(assignment.id, {
+                                  onSuccess: () => toast.success('Chore removed')
+                                });
+                              }
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         )}
                       </div>
@@ -377,19 +410,114 @@ export default function Chores() {
         <Dialog open={addChoreModalOpen} onOpenChange={setAddChoreModalOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Chore</DialogTitle>
+              <DialogTitle>Assign New Chore</DialogTitle>
               <DialogDescription>
-                Create a new recurring task for your household.
+                Create a task and assign it to a household member.
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
-              <p className="text-sm text-slate-500">
-                Chore management functionality coming soon!
-              </p>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Chore Name</Label>
+                <Input
+                  placeholder="e.g., Take out the trash"
+                  value={choreName}
+                  onChange={(e) => setChoreName(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Points</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={chorePoints}
+                    onChange={(e) => setChorePoints(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Date</Label>
+                  <Input
+                    type="date"
+                    value={assignedDate}
+                    onChange={(e) => setAssignedDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Assign To</Label>
+                <Select value={assignedUserId} onValueChange={setAssignedUserId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select member" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {members.map((member) => (
+                      <SelectItem key={member.user_id} value={member.user_id}>
+                        {member.profile?.full_name} {member.user_id === user?.id ? '(You)' : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setAddChoreModalOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setAddChoreModalOpen(false)}
+                disabled={createChore.isPending || createAssignment.isPending}
+              >
                 Cancel
+              </Button>
+              <Button
+                disabled={createChore.isPending || createAssignment.isPending}
+                onClick={() => {
+                  if (!household?.id) {
+                    toast.error('Household missing');
+                    return;
+                  }
+                  if (!choreName.trim() || !assignedUserId) {
+                    toast.error('Please fill in the chore name and assignee');
+                    return;
+                  }
+
+                  // 1. Create the Chore template
+                  createChore.mutate(
+                    {
+                      household_id: household.id,
+                      name: choreName,
+                      points: Number(chorePoints) || 10,
+                      frequency: 'weekly', // Defaulting for the demo
+                    },
+                    {
+                      onSuccess: (newChore) => {
+                        // 2. Once created, immediately assign it
+                        createAssignment.mutate(
+                          {
+                            chore_id: newChore.id,
+                            user_id: assignedUserId,
+                            assigned_date: assignedDate,
+                          },
+                          {
+                            onSuccess: () => {
+                              toast.success('Chore assigned successfully!');
+                              setAddChoreModalOpen(false);
+                              // Reset states
+                              setChoreName('');
+                              setChorePoints('10');
+                            },
+                            onError: () => toast.error('Failed to assign chore')
+                          }
+                        );
+                      },
+                      onError: () => toast.error('Failed to create chore template')
+                    }
+                  );
+                }}
+                className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white border-0"
+              >
+                {createChore.isPending || createAssignment.isPending ? 'Saving...' : 'Assign Chore'}
               </Button>
             </div>
           </DialogContent>
