@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Settings as SettingsIcon,
@@ -11,10 +11,8 @@ import {
   Moon,
   Sun,
   Monitor,
-  ChevronRight,
   Copy,
   Check,
-  Trash2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,13 +30,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -49,7 +40,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTheme } from 'next-themes';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -58,6 +48,21 @@ import { cn } from '@/lib/utils';
 import { apiClient } from '@/lib/api';
 import type { Profile } from '@/types';
 
+/* ─── Fonts & Brand ─── */
+function useFonts() {
+  useEffect(() => {
+    if (document.getElementById('homesync-fonts')) return;
+    const link = document.createElement('link');
+    link.id = 'homesync-fonts';
+    link.rel = 'stylesheet';
+    link.href =
+      'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap';
+    document.head.appendChild(link);
+  }, []);
+}
+
+const grainSvg = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E")`;
+
 const themes = [
   { value: 'light', label: 'Light', icon: Sun },
   { value: 'dark', label: 'Dark', icon: Moon },
@@ -65,14 +70,14 @@ const themes = [
 ];
 
 export default function Settings() {
+  useFonts();
+
   const { theme, setTheme } = useTheme();
   const { user, household, members, signOut, updateUser } = useAuthStore();
-
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [copied, setCopied] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-
   const [notifications, setNotifications] = useState({
     expenses: true,
     chores: true,
@@ -115,140 +120,148 @@ export default function Settings() {
   };
 
   return (
-    <ScrollArea className="h-screen">
-      <div className="p-6 lg:p-8 max-w-4xl mx-auto">
+    <ScrollArea className="h-screen bg-homesync-cream font-body text-homesync-ink relative">
+      {/* Global Grain Overlay */}
+      <div
+        className="fixed inset-0 pointer-events-none z-[999] opacity-40 mix-blend-overlay"
+        style={{ backgroundImage: grainSvg }}
+        aria-hidden="true"
+      />
+
+      <div className="p-6 lg:p-10 max-w-[800px] mx-auto relative z-10">
+
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-12 border-b-2 border-homesync-sand pb-6">
+          <div className="font-mono text-[11px] tracking-[0.2em] uppercase text-homesync-rust flex items-center gap-3 mb-3">
+            <div className="w-8 h-[1.5px] bg-homesync-rust" />
+            Preferences
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-display font-black text-homesync-ink tracking-tight">
             Settings
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Manage your account and household preferences
-          </p>
         </motion.div>
 
-        <div className="space-y-6">
+        <div className="space-y-12 pb-12">
+
           {/* Profile Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                  <User className="w-5 h-5" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none">
+              <CardHeader className="border-b-2 border-homesync-sand bg-homesync-tan pb-6">
+                <CardTitle className="font-display text-2xl font-bold text-homesync-ink flex items-center gap-3">
+                  <User className="w-6 h-6 text-homesync-ink" />
                   Profile
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted mt-2">
                   Manage your personal information
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <Avatar className="w-20 h-20">
-                    <AvatarImage src={user?.avatar_url} />
-                    <AvatarFallback className="text-2xl bg-gradient-to-br from-sky-500 to-teal-500 text-white">
+              <CardContent className="p-6 bg-white">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+                  <Avatar className="w-24 h-24 rounded-none border-2 border-homesync-ink flex-shrink-0">
+                    <AvatarImage src={user?.avatar_url} className="rounded-none" />
+                    <AvatarFallback className="rounded-none text-2xl font-display font-bold bg-homesync-ink text-homesync-cream">
                       {getInitials(user?.full_name || '')}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p className="font-medium text-lg text-slate-900 dark:text-white">
+                    <p className="font-display font-bold text-2xl text-homesync-ink mb-1">
                       {user?.full_name}
                     </p>
-                    <p className="text-sm text-slate-500">{user?.id}</p>
+                    <p className="font-mono text-xs text-homesync-muted mb-4">ID: {user?.id}</p>
+                    <Button
+                      variant="outline"
+                      onClick={() => setEditProfileOpen(true)}
+                      className="rounded-none border-2 border-homesync-ink bg-transparent text-homesync-ink hover:bg-homesync-ink hover:text-white font-mono text-xs uppercase tracking-widest transition-colors"
+                    >
+                      Edit Profile
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => setEditProfileOpen(true)}
-                  >
-                    Edit Profile
-                  </Button>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
           {/* Household Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Users className="w-5 h-5" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none">
+              <CardHeader className="border-b-2 border-homesync-sand bg-homesync-tan pb-6">
+                <CardTitle className="font-display text-2xl font-bold text-homesync-ink flex items-center gap-3">
+                  <Users className="w-6 h-6 text-homesync-ink" />
                   Household
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted mt-2">
                   Manage your household settings
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-900">
+              <CardContent className="p-0 bg-white">
+                <div className="divide-y-2 divide-homesync-sand">
+
+                  <div className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <p className="font-medium text-slate-900 dark:text-white">
+                      <p className="font-display font-bold text-xl text-homesync-ink mb-1">
                         {household?.name}
                       </p>
-                      <p className="text-sm text-slate-500">{members.length} members</p>
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted">
+                        {members.length} member{members.length !== 1 ? 's' : ''}
+                      </p>
                     </div>
-                    <Badge className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 border-0">
+                    <Badge className="rounded-none bg-transparent border-2 border-homesync-olive text-homesync-olive font-mono text-[10px] uppercase tracking-widest hover:bg-transparent">
                       Active
                     </Badge>
                   </div>
 
-                  <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900">
-                    <Label className="text-sm text-slate-500">Invite Code</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <code className="text-lg font-mono font-bold text-slate-900 dark:text-white">
+                  <div className="p-6 bg-homesync-cream">
+                    <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold mb-3 block">Invite Code</Label>
+                    <div className="flex items-center gap-0">
+                      <code className="flex-1 bg-white border-2 border-r-0 border-homesync-sand p-3 text-lg font-mono font-bold text-homesync-ink h-12 flex items-center">
                         {household?.invite_code}
                       </code>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="icon"
                         onClick={handleCopyInviteCode}
-                        className="h-8 w-8"
+                        className="h-12 w-12 rounded-none border-2 border-homesync-ink bg-homesync-ink text-white hover:bg-homesync-bark hover:border-homesync-bark transition-colors"
                       >
                         {copied ? (
-                          <Check className="w-4 h-4 text-teal-500" />
+                          <Check className="w-5 h-5 text-homesync-olive" />
                         ) : (
-                          <Copy className="w-4 h-4" />
+                          <Copy className="w-5 h-5" />
                         )}
                       </Button>
                     </div>
-                    <p className="text-xs text-slate-500 mt-2">
-                      Share this code with roommates to invite them to your household
+                    <p className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted mt-3">
+                      Share this code with roommates to invite them.
                     </p>
                   </div>
 
-                  <div>
-                    <h3 className="font-medium text-slate-900 dark:text-white mb-3">
-                      Members
+                  <div className="p-6">
+                    <h3 className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold mb-4">
+                      Roster
                     </h3>
-                    <div className="space-y-2">
+                    <div className="grid gap-3">
                       {members.map((member) => (
                         <div
                           key={member.id}
-                          className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-900"
+                          className="flex items-center gap-4 p-3 border-2 border-homesync-sand bg-white"
                         >
-                          <Avatar>
-                            <AvatarImage src={member.profile?.avatar_url} />
-                            <AvatarFallback className="bg-gradient-to-br from-sky-500 to-teal-500 text-white">
+                          <Avatar className="rounded-none border border-homesync-ink">
+                            <AvatarImage src={member.profile?.avatar_url} className="rounded-none" />
+                            <AvatarFallback className="rounded-none font-mono text-[10px] bg-homesync-tan text-homesync-ink">
                               {getInitials(member.profile?.full_name || '')}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
-                            <p className="font-medium text-slate-900 dark:text-white">
+                            <p className="font-body font-bold text-homesync-ink">
                               {member.profile?.full_name}
                             </p>
-                            <p className="text-xs text-slate-500 capitalize">
+                            <p className="font-mono text-[9px] uppercase tracking-widest text-homesync-muted">
                               {member.role}
                             </p>
                           </div>
                           {member.user_id === user?.id && (
-                            <Badge variant="outline">You</Badge>
+                            <Badge className="rounded-none bg-homesync-ink text-white font-mono text-[9px] uppercase tracking-widest hover:bg-homesync-ink">
+                              You
+                            </Badge>
                           )}
                         </div>
                       ))}
@@ -260,56 +273,39 @@ export default function Settings() {
           </motion.div>
 
           {/* Appearance Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Palette className="w-5 h-5" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none">
+              <CardHeader className="border-b-2 border-homesync-sand bg-homesync-tan pb-6">
+                <CardTitle className="font-display text-2xl font-bold text-homesync-ink flex items-center gap-3">
+                  <Palette className="w-6 h-6 text-homesync-ink" />
                   Appearance
                 </CardTitle>
-                <CardDescription>
-                  Customize the look and feel
+                <CardDescription className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted mt-2">
+                  Customize the interface theme
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-6 bg-white">
                 <div className="space-y-4">
-                  <Label>Theme</Label>
-                  <div className="grid grid-cols-3 gap-4">
+                  <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold block mb-4">Theme Settings</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {themes.map((t) => {
                       const Icon = t.icon;
+                      const isActive = theme === t.value;
                       return (
                         <motion.button
                           key={t.value}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
                           onClick={() => setTheme(t.value)}
                           className={cn(
-                            'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all',
-                            theme === t.value
-                              ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20'
-                              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                            'flex flex-col items-center justify-center gap-3 p-6 border-2 transition-all rounded-none',
+                            isActive
+                              ? 'border-homesync-ink bg-homesync-ink text-white'
+                              : 'border-homesync-sand bg-white text-homesync-ink hover:border-homesync-ink hover:bg-homesync-cream'
                           )}
                         >
-                          <Icon
-                            className={cn(
-                              'w-6 h-6',
-                              theme === t.value
-                                ? 'text-sky-500'
-                                : 'text-slate-400'
-                            )}
-                          />
-                          <span
-                            className={cn(
-                              'text-sm font-medium',
-                              theme === t.value
-                                ? 'text-sky-600 dark:text-sky-400'
-                                : 'text-slate-600 dark:text-slate-400'
-                            )}
-                          >
+                          <Icon className="w-6 h-6" />
+                          <span className="font-mono text-[10px] uppercase tracking-widest font-bold">
                             {t.label}
                           </span>
                         </motion.button>
@@ -322,163 +318,90 @@ export default function Settings() {
           </motion.div>
 
           {/* Notifications Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Bell className="w-5 h-5" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+            <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none">
+              <CardHeader className="border-b-2 border-homesync-sand bg-homesync-tan pb-6">
+                <CardTitle className="font-display text-2xl font-bold text-homesync-ink flex items-center gap-3">
+                  <Bell className="w-6 h-6 text-homesync-ink" />
                   Notifications
                 </CardTitle>
-                <CardDescription>
-                  Choose what notifications you want to receive
+                <CardDescription className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted mt-2">
+                  Control your alert preferences
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text-white">
-                        Expense Updates
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        Get notified about new expenses
-                      </p>
+              <CardContent className="p-0 bg-white">
+                <div className="divide-y-2 divide-homesync-sand">
+                  {[
+                    { key: 'expenses', label: 'Expense Updates', desc: 'Notified on new shared expenses' },
+                    { key: 'chores', label: 'Chore Reminders', desc: 'Daily and overdue chore alerts' },
+                    { key: 'meals', label: 'Meal Reminders', desc: 'Updates on planned meals' },
+                    { key: 'inventory', label: 'Low Stock Alerts', desc: 'When items need restocking' },
+                    { key: 'push', label: 'Push Notifications', desc: 'Enable device push alerts' },
+                  ].map((item) => (
+                    <div key={item.key} className="flex items-center justify-between p-6">
+                      <div>
+                        <p className="font-body font-bold text-homesync-ink mb-1">
+                          {item.label}
+                        </p>
+                        <p className="font-mono text-[9px] uppercase tracking-widest text-homesync-muted">
+                          {item.desc}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={notifications[item.key as keyof typeof notifications]}
+                        onCheckedChange={(checked) =>
+                          setNotifications((prev) => ({ ...prev, [item.key]: checked }))
+                        }
+                        className="data-[state=checked]:bg-homesync-olive"
+                      />
                     </div>
-                    <Switch
-                      checked={notifications.expenses}
-                      onCheckedChange={(checked) =>
-                        setNotifications((prev) => ({ ...prev, expenses: checked }))
-                      }
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text-white">
-                        Chore Reminders
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        Daily chore notifications
-                      </p>
-                    </div>
-                    <Switch
-                      checked={notifications.chores}
-                      onCheckedChange={(checked) =>
-                        setNotifications((prev) => ({ ...prev, chores: checked }))
-                      }
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text-white">
-                        Meal Reminders
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        Get notified about planned meals
-                      </p>
-                    </div>
-                    <Switch
-                      checked={notifications.meals}
-                      onCheckedChange={(checked) =>
-                        setNotifications((prev) => ({ ...prev, meals: checked }))
-                      }
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text-white">
-                        Low Stock Alerts
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        Notifications when items are running low
-                      </p>
-                    </div>
-                    <Switch
-                      checked={notifications.inventory}
-                      onCheckedChange={(checked) =>
-                        setNotifications((prev) => ({ ...prev, inventory: checked }))
-                      }
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text-white">
-                        Push Notifications
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        Receive push notifications
-                      </p>
-                    </div>
-                    <Switch
-                      checked={notifications.push}
-                      onCheckedChange={(checked) =>
-                        setNotifications((prev) => ({ ...prev, push: checked }))
-                      }
-                    />
-                  </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
           {/* Danger Zone */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-red-200 dark:border-red-800/50">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-red-600 dark:text-red-400 flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+            <Card className="rounded-none border-2 border-homesync-rust bg-homesync-rust/5 shadow-none">
+              <CardHeader className="border-b-2 border-homesync-rust bg-white pb-6">
+                <CardTitle className="font-display text-2xl font-bold text-homesync-rust flex items-center gap-3">
+                  <Shield className="w-6 h-6" />
                   Danger Zone
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="font-mono text-[10px] uppercase tracking-widest text-homesync-rust/70 mt-2">
                   Irreversible and destructive actions
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
+              <CardContent className="p-6 bg-white">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <p className="font-medium text-slate-900 dark:text-white">
+                    <p className="font-body font-bold text-homesync-ink mb-1">
                       Leave Household
                     </p>
-                    <p className="text-sm text-slate-500">
-                      You will lose access to all household data
+                    <p className="font-mono text-[9px] uppercase tracking-widest text-homesync-muted">
+                      You will lose access to all shared data permanently.
                     </p>
                   </div>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="destructive">
+                      <Button variant="destructive" className="rounded-none bg-homesync-rust text-white font-mono text-xs uppercase tracking-widest hover:bg-homesync-bark transition-colors px-6">
                         Leave Household
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
+                    <AlertDialogContent className="rounded-none border-2 border-homesync-rust bg-homesync-cream p-0 shadow-[8px_8px_0px_rgba(200,75,49,1)]">
+                      <AlertDialogHeader className="p-6 bg-white border-b-2 border-homesync-rust">
+                        <AlertDialogTitle className="font-display text-3xl font-black text-homesync-rust">Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription className="font-body text-homesync-muted mt-2">
                           This action cannot be undone. You will lose access to all household data
                           including expenses, chores, and meal plans.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction className="bg-red-600 hover:bg-red-700">
+                      <AlertDialogFooter className="p-6 bg-homesync-tan border-t-2 border-homesync-rust flex justify-end gap-3 sm:gap-0">
+                        <AlertDialogCancel className="rounded-none border-2 border-homesync-ink bg-transparent text-homesync-ink hover:bg-white font-mono text-xs uppercase tracking-widest px-6">
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction className="rounded-none bg-homesync-rust text-white hover:bg-homesync-bark font-mono text-xs uppercase tracking-widest px-6 ml-3">
                           Leave
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -490,17 +413,13 @@ export default function Settings() {
           </motion.div>
 
           {/* Sign Out */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full h-16 rounded-none border-2 border-homesync-ink bg-transparent text-homesync-ink hover:bg-homesync-ink hover:text-white font-mono text-sm uppercase tracking-widest transition-all"
               onClick={signOut}
             >
-              <LogOut className="w-4 h-4 mr-2" />
+              <LogOut className="w-5 h-5 mr-3" />
               Sign Out
             </Button>
           </motion.div>
@@ -508,39 +427,45 @@ export default function Settings() {
 
         {/* Edit Profile Modal */}
         <Dialog open={editProfileOpen} onOpenChange={setEditProfileOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Profile</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="max-w-md rounded-none border-2 border-homesync-ink bg-homesync-cream p-0 shadow-[8px_8px_0px_rgba(26,18,9,1)]">
+            <DialogHeader className="p-6 border-b-2 border-homesync-ink bg-homesync-tan">
+              <DialogTitle className="font-display text-3xl font-black text-homesync-ink">Edit Profile</DialogTitle>
+              <DialogDescription className="font-body text-homesync-muted text-sm mt-2">
                 Update your personal information
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="p-6 space-y-6">
               <div className="flex justify-center">
-                <Avatar className="w-24 h-24">
-                  <AvatarImage src={user?.avatar_url} />
-                  <AvatarFallback className="text-2xl bg-gradient-to-br from-sky-500 to-teal-500 text-white">
+                <Avatar className="w-24 h-24 rounded-none border-2 border-homesync-ink">
+                  <AvatarImage src={user?.avatar_url} className="rounded-none" />
+                  <AvatarFallback className="rounded-none text-2xl font-display font-bold bg-homesync-ink text-homesync-cream">
                     {getInitials(user?.full_name || '')}
                   </AvatarFallback>
                 </Avatar>
               </div>
-              <div className="space-y-2">
-                <Label>Full Name</Label>
+              <div className="space-y-3">
+                <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Full Name</Label>
                 <Input
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Enter your name"
+                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setEditProfileOpen(false)} disabled={isUpdating}>
+            <DialogFooter className="p-6 border-t-2 border-homesync-ink bg-homesync-tan flex justify-end gap-3 sm:gap-0">
+              <Button
+                variant="outline"
+                onClick={() => setEditProfileOpen(false)}
+                disabled={isUpdating}
+                className="rounded-none border-2 border-homesync-ink bg-transparent text-homesync-ink hover:bg-homesync-cream font-mono text-xs uppercase tracking-widest px-6"
+              >
                 Cancel
               </Button>
               <Button
                 onClick={handleUpdateProfile}
                 disabled={isUpdating}
-                className="bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white border-0"
+                className="rounded-none border-2 border-homesync-ink bg-homesync-ink text-white hover:bg-homesync-bark font-mono text-xs uppercase tracking-widest px-6 sm:ml-3"
               >
                 {isUpdating ? 'Saving...' : 'Save Changes'}
               </Button>

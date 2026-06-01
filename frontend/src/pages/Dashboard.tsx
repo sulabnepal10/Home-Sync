@@ -1,17 +1,15 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Wallet,
-  ArrowLeftRight,
   CheckSquare,
   UtensilsCrossed,
   Package,
   TrendingUp,
-  TrendingDown,
   Calendar,
   Bell,
   ArrowRight,
   Activity,
-  Droplets,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -39,28 +37,43 @@ import {
   useMeals
 } from '@/hooks/useQueries';
 import { useAuthStore } from '@/store/useAuthStore';
-import { formatDistanceToNow, format, isToday, isTomorrow } from 'date-fns';
+import { formatDistanceToNow, format, isToday } from 'date-fns';
 import { Link } from 'react-router-dom';
 
-const COLORS = ['#0ea5e9', '#14b8a6', '#f59e0b', '#f97316', '#ef4444', '#8b5cf6'];
+/* ─── Fonts & Brand ─── */
+function useFonts() {
+  useEffect(() => {
+    if (document.getElementById('homesync-fonts')) return;
+    const link = document.createElement('link');
+    link.id = 'homesync-fonts';
+    link.rel = 'stylesheet';
+    link.href =
+      'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap';
+    document.head.appendChild(link);
+  }, []);
+}
+
+const grainSvg = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E")`;
+
+// Updated to match HomeSync Brand Colors
+const COLORS = ['#C84B31', '#2C6E49', '#1A1209', '#7A6755', '#D4B896', '#3D2B1F'];
 
 const container = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
+    transition: { staggerChildren: 0.1 },
   },
 };
-
 const item = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0 },
 };
 
 export default function Dashboard() {
-  const { user, household, members } = useAuthStore();
+  useFonts();
+
+  const { user, members } = useAuthStore();
   const { data: expenses } = useExpenses();
   const { data: expenseSummary } = useExpenseSummary();
   const { data: activities } = useActivityLog();
@@ -72,7 +85,7 @@ export default function Dashboard() {
   const todaysMeals = upcomingMeals.filter((meal) => isToday(new Date(meal.date)));
 
   // Calculate monthly expense data for chart
-  const expenseChartData = expenses?.slice(0, 7).reverse().map((expense, index) => ({
+  const expenseChartData = expenses?.slice(0, 7).reverse().map((expense) => ({
     name: format(new Date(expense.created_at), 'MMM d'),
     amount: Number(expense.amount),
   })) || [];
@@ -98,37 +111,47 @@ export default function Dashboard() {
   const incompleteChores = todayChores.filter((assignment) => !assignment.completed_at);
 
   const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+    return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const currentHour = new Date().getHours();
+  const timeOfDay = currentHour < 12 ? 'morning' : currentHour < 18 ? 'afternoon' : 'evening';
+
   return (
-    <ScrollArea className="h-screen">
-      <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+    <ScrollArea className="h-screen bg-homesync-cream font-body text-homesync-ink relative">
+      {/* Global Grain Overlay */}
+      <div
+        className="fixed inset-0 pointer-events-none z-[999] opacity-40 mix-blend-overlay"
+        style={{ backgroundImage: grainSvg }}
+        aria-hidden="true"
+      />
+
+      <div className="p-6 lg:p-10 max-w-[1200px] mx-auto relative z-10">
+
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-12">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+            className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 border-b-2 border-homesync-sand pb-6"
           >
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
-                Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'},{' '}
-                {user?.full_name?.split(' ')[0] || 'there'}
+              <div className="font-mono text-[11px] tracking-[0.2em] uppercase text-homesync-rust flex items-center gap-3 mb-3">
+                <div className="w-8 h-[1.5px] bg-homesync-rust" />
+                Dashboard Overview
+              </div>
+              <h1 className="text-4xl sm:text-5xl font-display font-black text-homesync-ink tracking-tight">
+                Good {timeOfDay}, <br /><em className="italic text-homesync-rust">{user?.full_name?.split(' ')[0] || 'there'}.</em>
               </h1>
-              <p className="text-slate-600 dark:text-slate-400 mt-1">
-                Here's what's happening in your household
-              </p>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+              <Button
+                variant="outline"
+                size="icon"
+                className="relative rounded-none border-2 border-homesync-sand bg-transparent hover:bg-homesync-tan hover:border-homesync-ink transition-colors h-12 w-12"
+              >
+                <Bell className="w-5 h-5 text-homesync-ink" />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-homesync-rust rounded-none" />
               </Button>
             </div>
           </motion.div>
@@ -139,25 +162,25 @@ export default function Dashboard() {
           variants={container}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 mb-12 border-t-2 border-l-2 border-homesync-sand"
         >
+          {/* Card 1: Expenses */}
           <motion.div variants={item}>
-            <Card className="bg-gradient-to-br from-sky-500 to-sky-600 border-0 text-white overflow-hidden relative">
-              <CardContent className="p-6">
-                <div className="absolute top-4 right-4 w-16 h-16 bg-white/10 rounded-full blur-xl" />
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                    <Wallet className="w-5 h-5" />
+            <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-rust text-white shadow-none h-full transition-transform hover:bg-homesync-bark">
+              <CardContent className="p-6 sm:p-8 relative">
+                <div className="flex items-start justify-between mb-8">
+                  <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center">
+                    <Wallet className="w-6 h-6" />
                   </div>
-                  <Badge className="bg-white/20 border-0 text-white hover:bg-white/30">
+                  <Badge className="font-mono text-[10px] tracking-widest uppercase bg-transparent border border-white/30 text-white rounded-none hover:bg-white/10">
                     This Month
                   </Badge>
                 </div>
-                <p className="text-sm text-sky-100 mb-1">Total Spent</p>
-                <p className="text-3xl font-bold">
+                <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Total Spent</p>
+                <p className="font-display text-4xl font-bold mb-4">
                   ${expenseSummary?.totalSpent.toFixed(2) || '0.00'}
                 </p>
-                <div className="flex items-center gap-1 mt-2 text-sm text-sky-100">
+                <div className="flex items-center gap-2 font-mono text-[11px] tracking-wider text-white/80 border-t border-white/20 pt-4">
                   <TrendingUp className="w-4 h-4" />
                   <span>${expenseSummary?.totalOwed.toFixed(2) || '0.00'} to settle</span>
                 </div>
@@ -165,44 +188,44 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
+          {/* Card 2: Chores */}
           <motion.div variants={item}>
-            <Card className="bg-gradient-to-br from-teal-500 to-emerald-600 border-0 text-white overflow-hidden relative">
-              <CardContent className="p-6">
-                <div className="absolute top-4 right-4 w-16 h-16 bg-white/10 rounded-full blur-xl" />
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                    <CheckSquare className="w-5 h-5" />
+            <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-olive text-white shadow-none h-full transition-colors hover:bg-homesync-bark">
+              <CardContent className="p-6 sm:p-8">
+                <div className="flex items-start justify-between mb-8">
+                  <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center">
+                    <CheckSquare className="w-6 h-6" />
                   </div>
-                  <Badge className="bg-white/20 border-0 text-white hover:bg-white/30">
+                  <Badge className="font-mono text-[10px] tracking-widest uppercase bg-transparent border border-white/30 text-white rounded-none hover:bg-white/10">
                     Today
                   </Badge>
                 </div>
-                <p className="text-sm text-teal-100 mb-1">Chores</p>
-                <p className="text-3xl font-bold">
-                  {todayChores.length - incompleteChores.length}/{todayChores.length}
+                <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Chores Done</p>
+                <p className="font-display text-4xl font-bold mb-4">
+                  {todayChores.length - incompleteChores.length} <span className="text-2xl text-white/50">/ {todayChores.length}</span>
                 </p>
-                <p className="text-sm text-teal-100 mt-2">
+                <p className="font-mono text-[11px] tracking-wider text-white/80 border-t border-white/20 pt-4">
                   {incompleteChores.length} remaining
                 </p>
               </CardContent>
             </Card>
           </motion.div>
 
+          {/* Card 3: Meals */}
           <motion.div variants={item}>
-            <Card className="bg-gradient-to-br from-orange-500 to-amber-600 border-0 text-white overflow-hidden relative">
-              <CardContent className="p-6">
-                <div className="absolute top-4 right-4 w-16 h-16 bg-white/10 rounded-full blur-xl" />
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                    <UtensilsCrossed className="w-5 h-5" />
+            <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-tan text-homesync-ink shadow-none h-full transition-colors hover:bg-white">
+              <CardContent className="p-6 sm:p-8">
+                <div className="flex items-start justify-between mb-8">
+                  <div className="w-12 h-12 border-2 border-homesync-ink flex items-center justify-center">
+                    <UtensilsCrossed className="w-6 h-6" />
                   </div>
-                  <Badge className="bg-white/20 border-0 text-white hover:bg-white/30">
+                  <Badge className="font-mono text-[10px] tracking-widest uppercase bg-homesync-ink text-homesync-cream rounded-none hover:bg-homesync-bark">
                     Upcoming
                   </Badge>
                 </div>
-                <p className="text-sm text-orange-100 mb-1">Meals Planned</p>
-                <p className="text-3xl font-bold">{upcomingMeals.length}</p>
-                <p className="text-sm text-orange-100 mt-2 truncate">
+                <p className="font-mono text-xs tracking-widest uppercase text-homesync-muted mb-2">Meals Planned</p>
+                <p className="font-display text-4xl font-bold mb-4">{upcomingMeals.length}</p>
+                <p className="font-mono text-[11px] tracking-wider text-homesync-muted border-t border-homesync-sand pt-4 truncate">
                   {todaysMeals.length > 0
                     ? `Today: ${todaysMeals[0].meal_name}`
                     : 'No meals planned for today'}
@@ -211,28 +234,30 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
+          {/* Card 4: Alerts */}
           <motion.div variants={item}>
-            <Card className="bg-gradient-to-br from-rose-500 to-pink-600 border-0 text-white overflow-hidden relative">
-              <CardContent className="p-6">
-                <div className="absolute top-4 right-4 w-16 h-16 bg-white/10 rounded-full blur-xl" />
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                    <Package className="w-5 h-5" />
+            <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-ink text-homesync-cream shadow-none h-full transition-colors hover:bg-homesync-bark">
+              <CardContent className="p-6 sm:p-8">
+                <div className="flex items-start justify-between mb-8">
+                  <div className="w-12 h-12 border-2 border-white/20 flex items-center justify-center">
+                    <Package className="w-6 h-6" />
                   </div>
-                  <Badge className="bg-white/20 border-0 text-white hover:bg-white/30">
+                  <Badge className="font-mono text-[10px] tracking-widest uppercase bg-homesync-rust text-white rounded-none border-none">
                     Alert
                   </Badge>
                 </div>
-                <p className="text-sm text-rose-100 mb-1">Low Stock Items</p>
-                <p className="text-3xl font-bold">{lowStockItems?.length || 0}</p>
-                <p className="text-sm text-rose-100 mt-2">Need restocking</p>
+                <p className="font-mono text-xs tracking-widest uppercase text-white/50 mb-2">Low Stock</p>
+                <p className="font-display text-4xl font-bold mb-4">{lowStockItems?.length || 0}</p>
+                <p className="font-mono text-[11px] tracking-wider text-white/50 border-t border-white/10 pt-4">
+                  Items need restocking
+                </p>
               </CardContent>
             </Card>
           </motion.div>
         </motion.div>
 
         {/* Charts Section */}
-        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid lg:grid-cols-3 gap-6 mb-12">
           {/* Expense Trend */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -240,43 +265,47 @@ export default function Dashboard() {
             transition={{ delay: 0.3 }}
             className="lg:col-span-2"
           >
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+            <Card className="rounded-none border-2 border-homesync-sand bg-white shadow-none h-full">
+              <CardHeader className="flex flex-row items-center justify-between pb-6 border-b-2 border-homesync-sand">
+                <CardTitle className="font-display text-2xl font-bold text-homesync-ink">
                   Expense Trend
                 </CardTitle>
-                <Button variant="ghost" size="sm" asChild>
+                <Button variant="ghost" size="sm" asChild className="rounded-none font-mono text-xs uppercase tracking-widest hover:bg-homesync-tan">
                   <Link to="/expenses">
                     View All
                     <ArrowRight className="ml-2 w-4 h-4" />
                   </Link>
                 </Button>
               </CardHeader>
-              <CardContent>
-                <div className="h-64">
+              <CardContent className="pt-6">
+                <div className="h-72">
                   {expenseChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={expenseChartData}>
+                      <AreaChart data={expenseChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <defs>
                           <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                            <stop offset="5%" stopColor="#C84B31" stopOpacity={0.2} />
+                            <stop offset="95%" stopColor="#C84B31" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-                        <YAxis stroke="#94a3b8" fontSize={12} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E8DFD0" vertical={false} />
+                        <XAxis dataKey="name" stroke="#7A6755" fontSize={12} fontFamily="var(--ff-mono)" tickLine={false} axisLine={false} dy={10} />
+                        <YAxis stroke="#7A6755" fontSize={12} fontFamily="var(--ff-mono)" tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
                         <Tooltip
                           contentStyle={{
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '8px',
+                            backgroundColor: '#F5F0E8',
+                            border: '2px solid #1A1209',
+                            borderRadius: '0',
+                            fontFamily: 'var(--ff-mono)',
+                            fontSize: '12px',
+                            textTransform: 'uppercase'
                           }}
+                          itemStyle={{ color: '#1A1209', fontWeight: 'bold' }}
                         />
                         <Area
-                          type="monotone"
+                          type="step"
                           dataKey="amount"
-                          stroke="#0ea5e9"
+                          stroke="#C84B31"
                           strokeWidth={2}
                           fillOpacity={1}
                           fill="url(#colorAmount)"
@@ -284,7 +313,7 @@ export default function Dashboard() {
                       </AreaChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-slate-500">
+                    <div className="h-full flex items-center justify-center font-mono text-sm uppercase tracking-widest text-homesync-muted">
                       No expense data yet
                     </div>
                   )}
@@ -299,14 +328,14 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700 h-full">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                  Spending by Category
+            <Card className="rounded-none border-2 border-homesync-sand bg-white shadow-none h-full">
+              <CardHeader className="pb-6 border-b-2 border-homesync-sand">
+                <CardTitle className="font-display text-2xl font-bold text-homesync-ink">
+                  Spending Profile
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-48">
+              <CardContent className="pt-6">
+                <div className="h-48 mb-6">
                   {categoryData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -314,37 +343,48 @@ export default function Dashboard() {
                           data={categoryData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={50}
-                          outerRadius={70}
-                          paddingAngle={5}
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={2}
                           dataKey="value"
+                          stroke="none"
                         >
                           {categoryData.map((_, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#1A1209',
+                            border: 'none',
+                            borderRadius: '0',
+                            fontFamily: 'var(--ff-mono)',
+                            fontSize: '12px',
+                            color: '#F5F0E8'
+                          }}
+                          itemStyle={{ color: '#F5F0E8' }}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-slate-500">
+                    <div className="h-full flex items-center justify-center font-mono text-sm uppercase tracking-widest text-homesync-muted">
                       No data yet
                     </div>
                   )}
                 </div>
-                <div className="mt-4 space-y-2">
+                <div className="space-y-3">
                   {categoryData.slice(0, 4).map((cat, index) => (
-                    <div key={cat.name} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
+                    <div key={cat.name} className="flex items-center justify-between text-sm border-b border-homesync-sand pb-2 last:border-0">
+                      <div className="flex items-center gap-3">
                         <div
-                          className="w-2 h-2 rounded-full"
+                          className="w-3 h-3 rounded-none"
                           style={{ backgroundColor: COLORS[index % COLORS.length] }}
                         />
-                        <span className="text-slate-600 dark:text-slate-400 capitalize">
+                        <span className="font-mono text-xs uppercase tracking-widest text-homesync-ink">
                           {cat.name}
                         </span>
                       </div>
-                      <span className="font-medium text-slate-900 dark:text-white">
+                      <span className="font-mono text-xs font-bold text-homesync-ink">
                         ${cat.value.toFixed(2)}
                       </span>
                     </div>
@@ -356,63 +396,64 @@ export default function Dashboard() {
         </div>
 
         {/* Bottom Section */}
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-2 gap-6 mb-12">
+
           {/* Today's Schedule */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                  Today's Schedule
+            <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none h-full">
+              <CardHeader className="flex flex-row items-center justify-between pb-6 border-b-2 border-homesync-sand bg-homesync-tan">
+                <CardTitle className="font-display text-2xl font-bold text-homesync-ink">
+                  Today's Ledger
                 </CardTitle>
-                <Calendar className="w-5 h-5 text-slate-400" />
+                <Calendar className="w-5 h-5 text-homesync-rust" />
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="p-0">
+                <div className="divide-y-2 divide-homesync-sand">
                   {todayChores.length > 0 ? (
                     todayChores.map((assignment) => (
                       <div
                         key={assignment.id}
-                        className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-900"
+                        className="flex items-center gap-4 p-5 bg-white transition-colors hover:bg-homesync-cream"
                       >
                         <div
-                          className={`w-2 h-12 rounded-full ${assignment.completed_at
-                              ? 'bg-gradient-to-b from-teal-500 to-emerald-500'
-                              : 'bg-gradient-to-b from-orange-500 to-amber-500'
+                          className={`w-2 h-12 rounded-none ${assignment.completed_at
+                            ? 'bg-homesync-olive'
+                            : 'bg-homesync-rust'
                             }`}
                         />
                         <div className="flex-1">
-                          <p className="font-medium text-slate-900 dark:text-white">
+                          <p className="font-display text-lg font-bold text-homesync-ink">
                             {assignment.chore?.name}
                           </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Avatar className="w-5 h-5">
-                              <AvatarImage src={assignment.profile?.avatar_url} />
-                              <AvatarFallback className="text-[8px]">
+                          <div className="flex items-center gap-3 mt-1">
+                            <Avatar className="w-6 h-6 rounded-none border border-homesync-ink">
+                              <AvatarImage src={assignment.profile?.avatar_url} className="rounded-none" />
+                              <AvatarFallback className="text-[10px] rounded-none bg-homesync-tan text-homesync-ink font-mono">
                                 {getInitials(assignment.profile?.full_name || '')}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-xs text-slate-500">
+                            <span className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted">
                               {assignment.profile?.full_name}
                             </span>
                           </div>
                         </div>
                         {assignment.completed_at ? (
-                          <Badge className="bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 border-0">
+                          <Badge className="font-mono text-[10px] tracking-widest uppercase bg-homesync-olive text-white rounded-none border-none">
                             Done
                           </Badge>
                         ) : (
-                          <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-0">
+                          <Badge className="font-mono text-[10px] tracking-widest uppercase bg-transparent border-2 border-homesync-rust text-homesync-rust rounded-none">
                             Pending
                           </Badge>
                         )}
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-8 text-slate-500">
+                    <div className="text-center py-12 font-mono text-sm uppercase tracking-widest text-homesync-muted bg-white">
                       No chores scheduled for today
                     </div>
                   )}
@@ -427,37 +468,37 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+            <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none h-full">
+              <CardHeader className="flex flex-row items-center justify-between pb-6 border-b-2 border-homesync-sand bg-homesync-tan">
+                <CardTitle className="font-display text-2xl font-bold text-homesync-ink">
                   Recent Activity
                 </CardTitle>
-                <Activity className="w-5 h-5 text-slate-400" />
+                <Activity className="w-5 h-5 text-homesync-rust" />
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4 max-h-64 overflow-y-auto">
+              <CardContent className="p-0">
+                <div className="divide-y-2 divide-homesync-sand max-h-[350px] overflow-y-auto bg-white">
                   {activities && activities.length > 0 ? (
-                    activities.slice(0, 5).map((activity) => (
-                      <div key={activity.id} className="flex items-start gap-3">
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={activity.profile?.avatar_url} />
-                          <AvatarFallback className="text-xs bg-gradient-to-br from-sky-500 to-teal-500 text-white">
+                    activities.slice(0, 6).map((activity) => (
+                      <div key={activity.id} className="flex items-start gap-4 p-5">
+                        <Avatar className="w-10 h-10 rounded-none border-2 border-homesync-ink">
+                          <AvatarImage src={activity.profile?.avatar_url} className="rounded-none" />
+                          <AvatarFallback className="text-xs rounded-none bg-homesync-ink text-homesync-cream font-mono">
                             {getInitials(activity.profile?.full_name || '')}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1">
-                          <p className="text-sm text-slate-900 dark:text-white">
-                            <span className="font-medium">{activity.profile?.full_name}</span>{' '}
-                            {activity.description}
+                        <div className="flex-1 pt-1">
+                          <p className="text-sm text-homesync-ink leading-relaxed">
+                            <span className="font-bold font-display">{activity.profile?.full_name}</span>{' '}
+                            <span className="text-homesync-muted">{activity.description}</span>
                           </p>
-                          <p className="text-xs text-slate-500 mt-0.5">
+                          <p className="font-mono text-[10px] uppercase tracking-widest text-homesync-sand mt-2">
                             {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
                           </p>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-8 text-slate-500">
+                    <div className="text-center py-12 font-mono text-sm uppercase tracking-widest text-homesync-muted">
                       No recent activity
                     </div>
                   )}
@@ -472,35 +513,37 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="mt-6"
+          className="pb-12"
         >
-          <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                Household Members
+          <Card className="rounded-none border-2 border-homesync-sand bg-white shadow-none">
+            <CardHeader className="flex flex-row items-center justify-between pb-6 border-b-2 border-homesync-sand">
+              <CardTitle className="font-display text-2xl font-bold text-homesync-ink">
+                Household Roster
               </CardTitle>
-              <Badge className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 border-0">
+              <Badge className="font-mono text-[10px] tracking-widest uppercase bg-transparent border-2 border-homesync-ink text-homesync-ink rounded-none">
                 {members.length} members
               </Badge>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               <div className="flex flex-wrap gap-4">
                 {members.map((member) => (
                   <div
                     key={member.id}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900"
+                    className="flex items-center gap-4 p-4 border-2 border-homesync-sand bg-homesync-cream transition-colors hover:border-homesync-ink min-w-[200px]"
                   >
-                    <Avatar>
-                      <AvatarImage src={member.profile?.avatar_url} />
-                      <AvatarFallback className="bg-gradient-to-br from-sky-500 to-teal-500 text-white">
+                    <Avatar className="rounded-none border border-homesync-ink w-12 h-12">
+                      <AvatarImage src={member.profile?.avatar_url} className="rounded-none" />
+                      <AvatarFallback className="rounded-none bg-homesync-bark text-white font-mono text-sm">
                         {getInitials(member.profile?.full_name || '')}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium text-slate-900 dark:text-white">
+                      <p className="font-display font-bold text-homesync-ink text-lg leading-none mb-1">
                         {member.profile?.full_name}
                       </p>
-                      <p className="text-xs text-slate-500 capitalize">{member.role}</p>
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted">
+                        {member.role}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -508,6 +551,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </motion.div>
+
       </div>
     </ScrollArea>
   );

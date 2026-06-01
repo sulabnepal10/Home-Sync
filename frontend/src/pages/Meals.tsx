@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   UtensilsCrossed,
@@ -6,10 +6,10 @@ import {
   Plus,
   ChefHat,
   Users,
-  Clock,
   Check,
   ChevronLeft,
-  ChevronRight, Trash2
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,6 +45,21 @@ import { format, startOfWeek, addDays, isToday, isSameDay, parseISO } from 'date
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
+/* ─── Fonts & Brand ─── */
+function useFonts() {
+  useEffect(() => {
+    if (document.getElementById('homesync-fonts')) return;
+    const link = document.createElement('link');
+    link.id = 'homesync-fonts';
+    link.rel = 'stylesheet';
+    link.href =
+      'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap';
+    document.head.appendChild(link);
+  }, []);
+}
+
+const grainSvg = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E")`;
+
 const mealTimes = [
   { value: 'breakfast', label: 'Breakfast', time: '8:00 AM' },
   { value: 'lunch', label: 'Lunch', time: '12:00 PM' },
@@ -63,12 +78,15 @@ const mealIdeas = [
 ];
 
 export default function Meals() {
+  useFonts();
+
   const { user, members, household } = useAuthStore();
-  const { data: meals, isLoading } = useMeals();
+  const { data: meals } = useMeals();
   const createMeal = useCreateMeal();
   const joinMeal = useJoinMeal();
   const leaveMeal = useLeaveMeal();
   const deleteMeal = useDeleteMeal();
+
   const [selectedWeek, setSelectedWeek] = useState(new Date());
   const [addMealModalOpen, setAddMealModalOpen] = useState(false);
 
@@ -97,22 +115,32 @@ export default function Meals() {
   }) || [];
 
   return (
-    <ScrollArea className="h-screen">
-      <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+    <ScrollArea className="h-screen bg-homesync-cream font-body text-homesync-ink relative">
+      {/* Global Grain Overlay */}
+      <div
+        className="fixed inset-0 pointer-events-none z-[999] opacity-40 mix-blend-overlay"
+        style={{ backgroundImage: grainSvg }}
+        aria-hidden="true"
+      />
+
+      <div className="p-6 lg:p-10 max-w-[1200px] mx-auto relative z-10">
+
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-12 border-b-2 border-homesync-sand pb-6">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
+            <div className="font-mono text-[11px] tracking-[0.2em] uppercase text-homesync-rust flex items-center gap-3 mb-3">
+              <div className="w-8 h-[1.5px] bg-homesync-rust" />
               Meal Planner
+            </div>
+            <h1 className="text-4xl sm:text-5xl font-display font-black text-homesync-ink tracking-tight">
+              Meals & Menu
             </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-1">
-              Plan and coordinate meals with your roommates
-            </p>
           </motion.div>
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
             <Button
               onClick={() => setAddMealModalOpen(true)}
-              className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white border-0"
+              className="rounded-none border-2 border-homesync-ink bg-homesync-ink text-homesync-cream hover:bg-homesync-rust hover:border-homesync-rust font-mono text-xs uppercase tracking-widest px-6 py-6 transition-colors"
             >
               <Plus className="w-4 h-4 mr-2" />
               Plan Meal
@@ -125,47 +153,38 @@ export default function Meals() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-0 mb-12 border-t-2 border-l-2 border-homesync-sand"
         >
-          <Card className="bg-gradient-to-br from-rose-500 to-pink-600 border-0 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <ChefHat className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm text-rose-100">Your Turn</p>
-                  <p className="text-2xl font-bold">Tomorrow</p>
-                </div>
+          {/* Card 1: Your Turn */}
+          <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-olive text-white shadow-none hover:bg-homesync-bark transition-colors">
+            <CardContent className="p-6 sm:p-8">
+              <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
+                <ChefHat className="w-6 h-6" />
               </div>
+              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Your Turn</p>
+              <p className="font-display text-4xl font-bold">Tomorrow</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-500 to-amber-600 border-0 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <UtensilsCrossed className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm text-orange-100">Today's Meals</p>
-                  <p className="text-2xl font-bold">{todayMeals.length}</p>
-                </div>
+          {/* Card 2: Today's Meals */}
+          <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-rust text-white shadow-none hover:bg-homesync-bark transition-colors">
+            <CardContent className="p-6 sm:p-8">
+              <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
+                <UtensilsCrossed className="w-6 h-6" />
               </div>
+              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Today's Meals</p>
+              <p className="font-display text-4xl font-bold">{todayMeals.length}</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-teal-500 to-emerald-600 border-0 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <Users className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm text-teal-100">This Week</p>
-                  <p className="text-2xl font-bold">{upcomingMeals.length}</p>
-                </div>
+          {/* Card 3: This Week */}
+          <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-ink text-white shadow-none hover:bg-homesync-bark transition-colors">
+            <CardContent className="p-6 sm:p-8">
+              <div className="w-12 h-12 border-2 border-white/20 flex items-center justify-center mb-8">
+                <Users className="w-6 h-6" />
               </div>
+              <p className="font-mono text-xs tracking-widest uppercase text-white/50 mb-2">This Week</p>
+              <p className="font-display text-4xl font-bold">{upcomingMeals.length}</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -175,91 +194,92 @@ export default function Meals() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="flex items-center justify-between mb-6"
+          className="flex items-center justify-between mb-6 bg-homesync-tan border-2 border-homesync-sand p-2"
         >
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setSelectedWeek(addDays(selectedWeek, -7))}
+            className="rounded-none hover:bg-white text-homesync-ink"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h2 className="text-sm font-mono uppercase tracking-widest text-homesync-ink font-bold">
             Week of {format(weekStart, 'MMM d, yyyy')}
           </h2>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setSelectedWeek(addDays(selectedWeek, 7))}
+            className="rounded-none hover:bg-white text-homesync-ink"
           >
             <ChevronRight className="w-5 h-5" />
           </Button>
         </motion.div>
 
-        {/* Weekly Calendar */}
+        {/* Weekly Calendar View */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
+          className="mb-12 overflow-x-auto"
         >
-          <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
+          <Card className="min-w-[800px] rounded-none border-2 border-homesync-sand bg-white shadow-none">
             <CardContent className="p-0">
-              <div className="grid grid-cols-7">
+              <div className="grid grid-cols-7 divide-x-2 divide-homesync-sand">
                 {weekDays.map((day) => {
                   const dayMeals = meals?.filter((meal) =>
                     isSameDay(parseISO(meal.date), day)
                   ) || [];
-
                   const isCurrentDay = isToday(day);
 
                   return (
                     <div
                       key={day.toISOString()}
                       className={cn(
-                        'border-r border-slate-200 dark:border-slate-700 last:border-r-0 min-h-[180px]',
-                        isCurrentDay && 'bg-rose-50 dark:bg-rose-900/10'
+                        'min-h-[220px]',
+                        isCurrentDay ? 'bg-homesync-cream' : 'bg-transparent'
                       )}
                     >
                       <div
                         className={cn(
-                          'text-center py-3 border-b border-slate-200 dark:border-slate-700 font-medium',
-                          isCurrentDay && 'text-rose-600 dark:text-rose-400'
+                          'text-center py-4 border-b-2 border-homesync-sand font-medium',
+                          isCurrentDay ? 'bg-homesync-rust text-white border-homesync-rust' : 'text-homesync-ink bg-homesync-tan'
                         )}
                       >
-                        <p className="text-xs uppercase tracking-wide text-slate-500">
+                        <p className={cn("font-mono text-[10px] uppercase tracking-widest mb-1", isCurrentDay ? 'text-white/80' : 'text-homesync-muted')}>
                           {format(day, 'EEE')}
                         </p>
-                        <p className={cn('text-lg', isCurrentDay && 'font-bold')}>
+                        <p className="font-display text-2xl font-bold">
                           {format(day, 'd')}
                         </p>
                       </div>
-
-                      <div className="p-2 space-y-2">
+                      <div className="p-3 space-y-3">
                         {dayMeals.length > 0 ? (
                           dayMeals.map((meal) => (
                             <motion.div
                               key={meal.id}
                               whileHover={{ scale: 1.02 }}
-                              className="p-2 rounded-lg bg-rose-100 dark:bg-rose-900/30 text-sm"
+                              className="p-3 border-2 border-homesync-ink bg-white text-homesync-ink text-sm transition-all rounded-none"
                             >
-                              <div className="flex items-center gap-1 text-rose-600 dark:text-rose-400 mb-1">
-                                <ChefHat className="w-3 h-3" />
-                                <span className="text-xs font-medium">
+                              <div className="flex items-center gap-2 text-homesync-muted mb-2">
+                                <ChefHat className="w-3 h-3 text-homesync-rust" />
+                                <span className="font-mono text-[9px] uppercase tracking-widest font-bold text-homesync-ink truncate">
                                   {meal.chef?.full_name}
                                 </span>
                               </div>
-                              <p className="font-medium text-slate-900 dark:text-white truncate">
+                              <p className="font-bold font-body truncate leading-tight mb-2">
                                 {meal.meal_name}
                               </p>
-                              <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
-                                <Users className="w-3 h-3" />
-                                <span>{meal.attendees?.length || 0} attending</span>
+                              <div className="flex items-center gap-1 mt-1 text-[9px] font-mono uppercase tracking-widest text-homesync-muted">
+                                <Users className="w-3 h-3 text-homesync-ink" />
+                                <span>{meal.attendees?.length || 0} In</span>
                               </div>
                             </motion.div>
                           ))
                         ) : (
-                          <p className="text-xs text-center text-slate-400 py-4">
-                            No meals planned
+                          <p className="font-mono text-[10px] uppercase tracking-widest text-center text-homesync-muted py-4">
+                            No meals
                           </p>
                         )}
                       </div>
@@ -277,46 +297,44 @@ export default function Meals() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="mt-8"
+            className="mb-12"
           >
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                  <UtensilsCrossed className="w-5 h-5" />
+            <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none">
+              <CardHeader className="border-b-2 border-homesync-sand pb-6 bg-homesync-tan">
+                <CardTitle className="font-display text-2xl font-bold text-homesync-ink flex items-center gap-3">
+                  <UtensilsCrossed className="w-6 h-6 text-homesync-rust" />
                   Today's Menu
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-3 gap-4">
+              <CardContent className="p-6 bg-white">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {todayMeals.map((meal) => (
                     <motion.div
                       key={meal.id}
-                      whileHover={{ scale: 1.02 }}
-                      className="p-4 rounded-xl bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 border border-rose-200 dark:border-rose-800"
+                      whileHover={{ scale: 1.01 }}
+                      className="p-5 border-2 border-homesync-sand bg-homesync-cream hover:border-homesync-ink transition-colors flex flex-col"
                     >
-                      {/* Flex container updated to allow delete button on the right */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <Avatar>
-                            <AvatarImage src={meal.chef?.avatar_url} />
-                            <AvatarFallback className="bg-gradient-to-br from-rose-500 to-pink-500 text-white">
+                      <div className="flex items-start justify-between mb-4 border-b-2 border-homesync-sand pb-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-10 h-10 rounded-none border border-homesync-ink">
+                            <AvatarImage src={meal.chef?.avatar_url} className="rounded-none" />
+                            <AvatarFallback className="bg-homesync-ink text-white rounded-none font-mono text-xs">
                               {getInitials(meal.chef?.full_name || '')}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-medium text-slate-900 dark:text-white">
+                            <p className="font-bold font-body text-homesync-ink">
                               {meal.chef?.full_name}
                             </p>
-                            <p className="text-xs text-slate-500">Chef</p>
+                            <p className="font-mono text-[9px] uppercase tracking-widest text-homesync-muted">Chef</p>
                           </div>
                         </div>
 
-                        {/* Delete button (Only show if current user is the chef) */}
                         {user?.id === meal.chef_id && (
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 -mt-2 -mr-2"
+                            className="rounded-none hover:bg-homesync-tan text-homesync-rust h-8 w-8 -mt-2 -mr-2"
                             onClick={() => {
                               if (window.confirm('Are you sure you want to delete this meal?')) {
                                 deleteMeal.mutate(meal.id, {
@@ -330,24 +348,30 @@ export default function Meals() {
                         )}
                       </div>
 
-                      <h3 className="font-semibold text-lg text-slate-900 dark:text-white mb-2">
-                        {meal.meal_name}
-                      </h3>
-                      {meal.notes && (
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                          {meal.notes}
-                        </p>
-                      )}
+                      <div className="flex-1">
+                        <h3 className="font-display font-bold text-xl text-homesync-ink mb-2">
+                          {meal.meal_name}
+                        </h3>
+                        {meal.notes && (
+                          <p className="text-sm font-body text-homesync-muted mb-4 leading-relaxed">
+                            {meal.notes}
+                          </p>
+                        )}
+                      </div>
 
-                      {/* Join / Leave Button Area */}
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">
+                      <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-homesync-sand border-dashed">
+                        <Badge className="font-mono text-[9px] uppercase tracking-widest bg-transparent border-2 border-homesync-sand text-homesync-ink rounded-none hover:bg-transparent">
                           {meal.attendees?.length || 0} attending
                         </Badge>
                         <Button
                           size="sm"
-                          variant={meal.attendees?.includes(user?.id || '') ? "default" : "ghost"}
                           disabled={joinMeal.isPending || leaveMeal.isPending}
+                          className={cn(
+                            "rounded-none border-2 font-mono text-[10px] uppercase tracking-widest px-4",
+                            meal.attendees?.includes(user?.id || '')
+                              ? "bg-homesync-olive text-white border-homesync-olive hover:bg-homesync-bark hover:border-homesync-bark"
+                              : "bg-transparent text-homesync-ink border-homesync-ink hover:bg-homesync-ink hover:text-white"
+                          )}
                           onClick={() => {
                             if (meal.attendees?.includes(user?.id || '')) {
                               leaveMeal.mutate(meal.id, {
@@ -362,7 +386,7 @@ export default function Meals() {
                         >
                           {meal.attendees?.includes(user?.id || '') ? (
                             <>
-                              <Check className="w-4 h-4 mr-1" />
+                              <Check className="w-3 h-3 mr-2" />
                               Attending
                             </>
                           ) : (
@@ -383,16 +407,16 @@ export default function Meals() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="mt-8"
+          className="pb-12"
         >
-          <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                <RotateCcw className="w-5 h-5" />
+          <Card className="rounded-none border-2 border-homesync-sand bg-white shadow-none">
+            <CardHeader className="border-b-2 border-homesync-sand pb-6">
+              <CardTitle className="font-display text-2xl font-bold text-homesync-ink flex items-center gap-3">
+                <RotateCcw className="w-6 h-6 text-homesync-ink" />
                 Cooking Rotation
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               <div className="flex flex-wrap gap-4">
                 {members.map((member, index) => (
                   <motion.div
@@ -400,26 +424,29 @@ export default function Meals() {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.6 + index * 0.1 }}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900"
+                    className="flex items-center gap-4 p-4 border-2 border-homesync-sand bg-homesync-cream transition-colors hover:border-homesync-ink min-w-[200px]"
                   >
                     <div className="relative">
-                      <Avatar>
-                        <AvatarImage src={member.profile?.avatar_url} />
-                        <AvatarFallback className="bg-gradient-to-br from-rose-500 to-pink-500 text-white">
+                      <Avatar className="w-12 h-12 rounded-none border border-homesync-ink">
+                        <AvatarImage src={member.profile?.avatar_url} className="rounded-none" />
+                        <AvatarFallback className="rounded-none bg-homesync-bark text-white font-mono text-sm">
                           {getInitials(member.profile?.full_name || '')}
                         </AvatarFallback>
                       </Avatar>
                       {index === 0 && (
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
+                        <div className="absolute -bottom-2 -right-2 w-6 h-6 border border-homesync-ink bg-homesync-rust flex items-center justify-center rounded-none">
                           <ChefHat className="w-3 h-3 text-white" />
                         </div>
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-slate-900 dark:text-white">
+                      <p className="font-display font-bold text-homesync-ink text-lg leading-none mb-1">
                         {member.profile?.full_name}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className={cn(
+                        "font-mono text-[10px] uppercase tracking-widest",
+                        index === 0 ? "text-homesync-rust font-bold" : "text-homesync-muted"
+                      )}>
                         {index === 0 ? 'Tomorrow' : `Day ${index + 1}`}
                       </p>
                     </div>
@@ -432,30 +459,32 @@ export default function Meals() {
 
         {/* Add Meal Modal */}
         <Dialog open={addMealModalOpen} onOpenChange={setAddMealModalOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Plan a Meal</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="max-w-md rounded-none border-2 border-homesync-ink bg-homesync-cream p-0 shadow-[8px_8px_0px_rgba(26,18,9,1)]">
+            <DialogHeader className="p-6 border-b-2 border-homesync-ink bg-homesync-tan">
+              <DialogTitle className="font-display text-3xl font-black text-homesync-ink">Plan a Meal</DialogTitle>
+              <DialogDescription className="font-body text-homesync-muted text-sm mt-2">
                 Schedule a meal and let your roommates know what's cooking!
               </DialogDescription>
             </DialogHeader>
+            <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
 
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="meal-name">Meal Name</Label>
+              <div className="space-y-3">
+                <Label htmlFor="meal-name" className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Meal Name</Label>
                 <Input
                   id="meal-name"
                   placeholder="What's on the menu?"
                   value={mealName}
                   onChange={(e) => setMealName(e.target.value)}
+                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
                 />
-                <div className="flex flex-wrap gap-2 mt-2">
+                <div className="flex flex-wrap gap-2 pt-2">
                   {mealIdeas.slice(0, 4).map((idea) => (
                     <Button
                       key={idea}
                       variant="outline"
                       size="sm"
                       onClick={() => setMealName(idea)}
+                      className="rounded-none border-2 border-homesync-sand bg-white hover:bg-homesync-tan hover:border-homesync-ink text-homesync-ink font-mono text-[9px] uppercase tracking-widest h-8"
                     >
                       {idea}
                     </Button>
@@ -463,26 +492,26 @@ export default function Meals() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Date</Label>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Date</Label>
                   <Input
                     type="date"
                     value={mealDate}
                     onChange={(e) => setMealDate(e.target.value)}
+                    className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-xs uppercase"
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Meal Time</Label>
+                <div className="space-y-3">
+                  <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Time</Label>
                   <Select value={mealTime} onValueChange={setMealTime}>
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-body text-base">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-none border-2 border-homesync-ink bg-homesync-cream font-body">
                       {mealTimes.map((time) => (
-                        <SelectItem key={time.value} value={time.value}>
-                          {time.label} ({time.time})
+                        <SelectItem key={time.value} value={time.value} className="focus:bg-homesync-tan rounded-none cursor-pointer">
+                          {time.label} <span className="text-homesync-muted ml-1">({time.time})</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -490,44 +519,55 @@ export default function Meals() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Notes (optional)</Label>
+              <div className="space-y-3">
+                <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Notes <span className="text-homesync-muted font-normal lowercase tracking-normal">(optional)</span></Label>
                 <Textarea
-                  placeholder="Any special notes, dietary restrictions, etc."
+                  placeholder="Special notes, dietary restrictions, etc."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  rows={2}
+                  rows={3}
+                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body resize-none p-3"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Who's attending?</Label>
+              <div className="space-y-3">
+                <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Who's attending?</Label>
                 <div className="flex flex-wrap gap-2">
-                  {members.map((member) => (
-                    <Button
-                      key={member.user_id}
-                      variant={selectedAttendees.includes(member.user_id) ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => {
-                        setSelectedAttendees((prev) =>
-                          prev.includes(member.user_id)
-                            ? prev.filter((id) => id !== member.user_id)
-                            : [...prev, member.user_id]
-                        );
-                      }}
-                    >
-                      {member.profile?.full_name}
-                    </Button>
-                  ))}
+                  {members.map((member) => {
+                    const isSelected = selectedAttendees.includes(member.user_id);
+                    return (
+                      <Button
+                        key={member.user_id}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedAttendees((prev) =>
+                            prev.includes(member.user_id)
+                              ? prev.filter((id) => id !== member.user_id)
+                              : [...prev, member.user_id]
+                          );
+                        }}
+                        className={cn(
+                          "rounded-none border-2 font-mono text-[10px] uppercase tracking-widest h-9",
+                          isSelected
+                            ? "bg-homesync-ink border-homesync-ink text-white hover:bg-homesync-bark hover:text-white"
+                            : "bg-white border-homesync-sand text-homesync-ink hover:bg-homesync-tan hover:border-homesync-ink"
+                        )}
+                      >
+                        {member.profile?.full_name}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3">
+            <div className="p-6 border-t-2 border-homesync-ink bg-homesync-tan flex justify-end gap-4">
               <Button
                 variant="outline"
                 onClick={() => setAddMealModalOpen(false)}
                 disabled={createMeal.isPending}
+                className="rounded-none border-2 border-homesync-ink bg-transparent text-homesync-ink hover:bg-homesync-cream font-mono text-xs uppercase tracking-widest px-6"
               >
                 Cancel
               </Button>
@@ -542,7 +582,6 @@ export default function Meals() {
                     toast.error('Household ID is missing');
                     return;
                   }
-
                   createMeal.mutate(
                     {
                       household_id: household.id,
@@ -565,7 +604,7 @@ export default function Meals() {
                     }
                   );
                 }}
-                className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white border-0"
+                className="rounded-none border-2 border-homesync-ink bg-homesync-rust text-white hover:bg-homesync-bark font-mono text-xs uppercase tracking-widest px-6"
               >
                 {createMeal.isPending ? 'Planning...' : 'Plan Meal'}
               </Button>
@@ -577,6 +616,7 @@ export default function Meals() {
   );
 }
 
+// Keeping original inline SVGs and components for backward compatibility
 function RotateCcw({ className }: { className?: string }) {
   return <RotateCcwIcon className={className} />;
 }

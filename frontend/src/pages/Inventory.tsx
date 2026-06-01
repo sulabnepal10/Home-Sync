@@ -1,17 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Package,
   Plus,
   Search,
   AlertTriangle,
-  Droplets,
   ShoppingCart,
-  Check,
   Filter,
   Battery,
   Apple,
-  Sparkles, Minus, Trash2
+  Sparkles,
+  Minus,
+  Trash2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Progress } from '@/components/ui/progress';
 import {
   useInventory,
   useLowStockItems,
@@ -47,6 +46,21 @@ import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
+/* ─── Fonts & Brand ─── */
+function useFonts() {
+  useEffect(() => {
+    if (document.getElementById('homesync-fonts')) return;
+    const link = document.createElement('link');
+    link.id = 'homesync-fonts';
+    link.rel = 'stylesheet';
+    link.href =
+      'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap';
+    document.head.appendChild(link);
+  }, []);
+}
+
+const grainSvg = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E")`;
+
 const categories = [
   { value: 'groceries', label: 'Groceries', icon: Apple },
   { value: 'supplies', label: 'Household Supplies', icon: Sparkles },
@@ -54,9 +68,12 @@ const categories = [
 ];
 
 export default function Inventory() {
+  useFonts();
+
   const { user, household } = useAuthStore();
-  const { data: inventory, isLoading } = useInventory();
+  const { data: inventory } = useInventory();
   const { data: lowStockItems } = useLowStockItems();
+
   const createItem = useCreateInventoryItem();
   const updateItem = useUpdateInventoryItem();
   const restockItem = useRestockItem();
@@ -93,22 +110,32 @@ export default function Inventory() {
   const groceryItems = inventory?.filter((i) => i.category === 'groceries').length || 0;
 
   return (
-    <ScrollArea className="h-screen">
-      <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+    <ScrollArea className="h-screen bg-homesync-cream font-body text-homesync-ink relative">
+      {/* Global Grain Overlay */}
+      <div
+        className="fixed inset-0 pointer-events-none z-[999] opacity-40 mix-blend-overlay"
+        style={{ backgroundImage: grainSvg }}
+        aria-hidden="true"
+      />
+
+      <div className="p-6 lg:p-10 max-w-[1200px] mx-auto relative z-10">
+
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-12 border-b-2 border-homesync-sand pb-6">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
+            <div className="font-mono text-[11px] tracking-[0.2em] uppercase text-homesync-rust flex items-center gap-3 mb-3">
+              <div className="w-8 h-[1.5px] bg-homesync-rust" />
+              Stock Management
+            </div>
+            <h1 className="text-4xl sm:text-5xl font-display font-black text-homesync-ink tracking-tight">
               Shared Inventory
             </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-1">
-              Track and manage your household items
-            </p>
           </motion.div>
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
             <Button
               onClick={() => setAddItemModalOpen(true)}
-              className="bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-cyan-600 hover:to-sky-600 text-white border-0"
+              className="rounded-none border-2 border-homesync-ink bg-homesync-ink text-homesync-cream hover:bg-homesync-rust hover:border-homesync-rust font-mono text-xs uppercase tracking-widest px-6 py-6 transition-colors"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Item
@@ -121,47 +148,38 @@ export default function Inventory() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-0 mb-12 border-t-2 border-l-2 border-homesync-sand"
         >
-          <Card className="bg-gradient-to-br from-cyan-500 to-sky-600 border-0 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <Package className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm text-cyan-100">Total Items</p>
-                  <p className="text-2xl font-bold">{totalItems}</p>
-                </div>
+          {/* Card 1: Total Items */}
+          <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-olive text-white shadow-none hover:bg-homesync-bark transition-colors">
+            <CardContent className="p-6 sm:p-8">
+              <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
+                <Package className="w-6 h-6" />
               </div>
+              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Total Items</p>
+              <p className="font-display text-4xl font-bold">{totalItems}</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-rose-500 to-pink-600 border-0 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <AlertTriangle className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm text-rose-100">Low Stock</p>
-                  <p className="text-2xl font-bold">{lowStockCount}</p>
-                </div>
+          {/* Card 2: Low Stock */}
+          <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-rust text-white shadow-none hover:bg-homesync-bark transition-colors">
+            <CardContent className="p-6 sm:p-8">
+              <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
+                <AlertTriangle className="w-6 h-6" />
               </div>
+              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Low Stock</p>
+              <p className="font-display text-4xl font-bold">{lowStockCount}</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-teal-500 to-emerald-600 border-0 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <ShoppingCart className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm text-teal-100">Groceries</p>
-                  <p className="text-2xl font-bold">{groceryItems}</p>
-                </div>
+          {/* Card 3: Groceries */}
+          <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-ink text-white shadow-none hover:bg-homesync-bark transition-colors">
+            <CardContent className="p-6 sm:p-8">
+              <div className="w-12 h-12 border-2 border-white/20 flex items-center justify-center mb-8">
+                <ShoppingCart className="w-6 h-6" />
               </div>
+              <p className="font-mono text-xs tracking-widest uppercase text-white/50 mb-2">Groceries</p>
+              <p className="font-display text-4xl font-bold">{groceryItems}</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -172,29 +190,29 @@ export default function Inventory() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="mb-8"
+            className="mb-12"
           >
-            <Card className="bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-rose-900 dark:text-rose-100 flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5" />
-                  Low Stock Alert
+            <Card className="rounded-none border-2 border-homesync-rust bg-homesync-tan shadow-none">
+              <CardHeader className="pb-4 border-b-2 border-homesync-rust bg-white">
+                <CardTitle className="font-display text-2xl font-bold text-homesync-rust flex items-center gap-3">
+                  <AlertTriangle className="w-6 h-6" />
+                  Restock Needed
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <div className="flex flex-wrap gap-3">
                   {lowStockItems.map((item) => (
                     <motion.div
                       key={item.id}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-700"
+                      className="flex items-center gap-3 px-4 py-3 bg-white border-2 border-homesync-rust"
                     >
-                      <Package className="w-4 h-4 text-rose-500" />
-                      <span className="font-medium text-slate-900 dark:text-white">
+                      <Package className="w-4 h-4 text-homesync-rust" />
+                      <span className="font-bold font-body text-homesync-ink">
                         {item.name}
                       </span>
-                      <Badge className="bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border-0">
+                      <Badge className="rounded-none bg-transparent border border-homesync-rust text-homesync-rust font-mono text-[9px] uppercase tracking-widest hover:bg-transparent ml-2">
                         {item.quantity} {item.unit} left
                       </Badge>
                     </motion.div>
@@ -210,26 +228,28 @@ export default function Inventory() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="flex flex-col sm:flex-row gap-4 mb-6"
+          className="flex flex-col sm:flex-row gap-4 mb-8"
         >
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-homesync-muted" />
             <Input
               placeholder="Search items..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-12 rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body text-base h-12"
             />
           </div>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full sm:w-48">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="All Categories" />
+            <SelectTrigger className="w-full sm:w-64 rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-mono text-xs uppercase tracking-widest">
+              <div className="flex items-center">
+                <Filter className="w-4 h-4 mr-3 text-homesync-muted" />
+                <SelectValue placeholder="All Categories" />
+              </div>
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
+            <SelectContent className="rounded-none border-2 border-homesync-ink font-mono text-xs uppercase tracking-widest bg-homesync-cream">
+              <SelectItem value="all" className="focus:bg-homesync-tan rounded-none">All Categories</SelectItem>
               {categories.map((cat) => (
-                <SelectItem key={cat.value} value={cat.value}>
+                <SelectItem key={cat.value} value={cat.value} className="focus:bg-homesync-tan rounded-none">
                   {cat.label}
                 </SelectItem>
               ))}
@@ -242,7 +262,7 @@ export default function Inventory() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="space-y-6"
+          className="space-y-12 pb-12"
         >
           {Object.entries(itemsByCategory).map(([category, items]) => {
             const categoryInfo = categories.find((c) => c.value === category) || {
@@ -252,15 +272,15 @@ export default function Inventory() {
             const Icon = categoryInfo.icon;
 
             return (
-              <Card key={category} className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Icon className="w-5 h-5" />
+              <Card key={category} className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none">
+                <CardHeader className="border-b-2 border-homesync-sand bg-homesync-tan pb-6">
+                  <CardTitle className="font-display text-2xl font-bold text-homesync-ink flex items-center gap-3">
+                    <Icon className="w-6 h-6 text-homesync-ink" />
                     {categoryInfo.label}
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <CardContent className="p-6 bg-white">
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {items.map((item, index) => {
                       const isLowStock = item.quantity <= item.min_quantity;
                       const stockPercentage = Math.min(
@@ -274,64 +294,85 @@ export default function Inventory() {
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ delay: index * 0.05 }}
-                          whileHover={{ scale: 1.02 }}
+                          whileHover={{ scale: 1.01 }}
                           className={cn(
-                            'p-4 rounded-xl border transition-all cursor-pointer',
+                            'flex flex-col p-5 border-2 transition-colors',
                             isLowStock
-                              ? 'bg-rose-50 dark:bg-rose-900/10 border-rose-200 dark:border-rose-800'
-                              : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700'
+                              ? 'border-homesync-rust bg-homesync-rust/5'
+                              : 'border-homesync-sand bg-homesync-cream hover:border-homesync-ink'
                           )}
                         >
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex-1 pr-2">
-                              <p className="font-medium text-slate-900 dark:text-white truncate">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1 pr-4">
+                              <p className="font-display font-bold text-xl text-homesync-ink truncate mb-1">
                                 {item.name}
                               </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                              <div className="flex items-center gap-2">
+                                <p className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted font-bold">
                                   {item.quantity} {item.unit}
                                 </p>
                                 {isLowStock && (
-                                  <Badge className="bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border-0 px-1.5 py-0">
-                                    <AlertTriangle className="w-3 h-3 mr-1" />
+                                  <Badge className="rounded-none bg-transparent border border-homesync-rust text-homesync-rust font-mono text-[9px] uppercase tracking-widest hover:bg-transparent px-1">
                                     Low
                                   </Badge>
                                 )}
                               </div>
                             </div>
+                          </div>
+
+                          {/* Flat Brutalist Progress Bar */}
+                          <div className="w-full h-2 bg-white border border-homesync-sand mb-4 flex-shrink-0">
+                            <div
+                              className={cn(
+                                "h-full transition-all duration-300",
+                                isLowStock ? "bg-homesync-rust" : "bg-homesync-olive"
+                              )}
+                              style={{ width: `${stockPercentage}%` }}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between mt-auto">
+                            <p className="font-mono text-[9px] uppercase tracking-widest text-homesync-sand">
+                              {item.last_purchased ? (
+                                <>
+                                  Purchased{' '}
+                                  {formatDistanceToNow(new Date(item.last_purchased), {
+                                    addSuffix: true,
+                                  })}
+                                </>
+                              ) : 'Never purchased'}
+                            </p>
 
                             {/* Action Buttons: -, +, Delete */}
-                            <div className="flex items-center gap-1 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-0.5">
+                            <div className="flex items-center gap-1">
                               <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="icon"
-                                className="h-7 w-7 text-slate-500 hover:text-orange-600"
+                                className="h-8 w-8 rounded-none border-2 border-homesync-ink text-homesync-ink hover:bg-homesync-ink hover:text-white transition-colors"
                                 disabled={updateItem.isPending || item.quantity <= 0}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // Use updateItem to strictly subtract 1 without triggering a "restock" event
                                   updateItem.mutate({ id: item.id, quantity: Math.max(0, item.quantity - 1) });
                                 }}
                               >
                                 <Minus className="w-3 h-3" />
                               </Button>
                               <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="icon"
-                                className="h-7 w-7 text-slate-500 hover:text-teal-600"
+                                className="h-8 w-8 rounded-none border-2 border-homesync-ink text-homesync-ink hover:bg-homesync-olive hover:text-white hover:border-homesync-olive transition-colors"
                                 disabled={restockItem.isPending}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // Use restockItem to add 1 and update the "last_purchased" timestamp
                                   restockItem.mutate({ id: item.id, quantity: 1 });
                                 }}
                               >
                                 <Plus className="w-3 h-3" />
                               </Button>
                               <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="icon"
-                                className="h-7 w-7 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 ml-1"
+                                className="h-8 w-8 rounded-none border-2 border-homesync-rust text-homesync-rust hover:bg-homesync-rust hover:text-white ml-1 transition-colors"
                                 disabled={deleteItem.isPending}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -346,22 +387,6 @@ export default function Inventory() {
                               </Button>
                             </div>
                           </div>
-                          <Progress
-                            value={stockPercentage}
-                            className={cn(
-                              'h-2',
-                              isLowStock && '[&>div]:bg-rose-500'
-                            )}
-                          />
-
-                          {item.last_purchased && (
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                              Last purchased{' '}
-                              {formatDistanceToNow(new Date(item.last_purchased), {
-                                addSuffix: true,
-                              })}
-                            </p>
-                          )}
                         </motion.div>
                       );
                     })}
@@ -372,107 +397,104 @@ export default function Inventory() {
           })}
 
           {filteredItems.length === 0 && (
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
-              <CardContent className="py-16">
-                <div className="flex flex-col items-center justify-center text-slate-500">
-                  <Package className="w-16 h-16 mb-4 text-slate-300" />
-                  <p className="text-lg font-medium text-slate-900 dark:text-white mb-1">
-                    No items found
-                  </p>
-                  <p className="text-sm">
-                    {searchQuery
-                      ? 'Try adjusting your search'
-                      : 'Add items to track your shared inventory'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="flex flex-col items-center justify-center py-20 text-homesync-muted bg-white border-2 border-dashed border-homesync-sand m-4">
+              <Package className="w-12 h-12 mb-4 text-homesync-sand opacity-50" />
+              <p className="font-display text-2xl font-bold text-homesync-ink mb-2">
+                No items found
+              </p>
+              <p className="font-mono text-xs uppercase tracking-widest text-homesync-muted text-center px-4">
+                {searchQuery ? 'Adjust your search filters' : 'Add items to track your shared inventory'}
+              </p>
+            </div>
           )}
         </motion.div>
 
         {/* Add Item Modal */}
         <Dialog open={addItemModalOpen} onOpenChange={setAddItemModalOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Item</DialogTitle>
-              <DialogDescription>
-                Add an item to your shared inventory.
+          <DialogContent className="max-w-md rounded-none border-2 border-homesync-ink bg-homesync-cream p-0 shadow-[8px_8px_0px_rgba(26,18,9,1)]">
+            <DialogHeader className="p-6 border-b-2 border-homesync-ink bg-homesync-tan">
+              <DialogTitle className="font-display text-3xl font-black text-homesync-ink">Add New Item</DialogTitle>
+              <DialogDescription className="font-body text-homesync-muted text-sm mt-2">
+                Log a new item in your shared household inventory.
               </DialogDescription>
             </DialogHeader>
+            <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
 
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="item-name">Item Name</Label>
+              <div className="space-y-3">
+                <Label htmlFor="item-name" className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Item Name</Label>
                 <Input
                   id="item-name"
-                  placeholder="e.g., Milk, Paper Towels, Water Jars"
+                  placeholder="e.g., Milk, Paper Towels"
                   value={itemName}
                   onChange={(e) => setItemName(e.target.value)}
+                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Category</Label>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Category</Label>
                   <Select value={itemCategory} onValueChange={setItemCategory}>
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-body text-base">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-none border-2 border-homesync-ink bg-homesync-cream font-body">
                       {categories.map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>
+                        <SelectItem key={cat.value} value={cat.value} className="focus:bg-homesync-tan rounded-none cursor-pointer">
                           {cat.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Unit</Label>
+                <div className="space-y-3">
+                  <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Unit</Label>
                   <Select value={itemUnit} onValueChange={setItemUnit}>
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-body text-base">
                       <SelectValue placeholder="Select unit" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="units">Units</SelectItem>
-                      <SelectItem value="liters">Liters</SelectItem>
-                      <SelectItem value="kg">Kg</SelectItem>
-                      <SelectItem value="gallons">Gallons</SelectItem>
-                      <SelectItem value="pieces">Pieces</SelectItem>
+                    <SelectContent className="rounded-none border-2 border-homesync-ink bg-homesync-cream font-body">
+                      <SelectItem value="units" className="focus:bg-homesync-tan rounded-none cursor-pointer">Units</SelectItem>
+                      <SelectItem value="liters" className="focus:bg-homesync-tan rounded-none cursor-pointer">Liters</SelectItem>
+                      <SelectItem value="kg" className="focus:bg-homesync-tan rounded-none cursor-pointer">Kg</SelectItem>
+                      <SelectItem value="gallons" className="focus:bg-homesync-tan rounded-none cursor-pointer">Gallons</SelectItem>
+                      <SelectItem value="pieces" className="focus:bg-homesync-tan rounded-none cursor-pointer">Pieces</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Quantity</Label>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Quantity</Label>
                   <Input
                     type="number"
                     placeholder="0"
                     value={itemQuantity}
                     onChange={(e) => setItemQuantity(e.target.value)}
+                    className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-base"
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Low Stock Threshold</Label>
+                <div className="space-y-3">
+                  <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Low Alert At</Label>
                   <Input
                     type="number"
                     placeholder="1"
                     value={itemMinQuantity}
                     onChange={(e) => setItemMinQuantity(e.target.value)}
+                    className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-base"
                   />
                 </div>
               </div>
+
             </div>
 
-            <div className="flex justify-end gap-3">
+            <div className="p-6 border-t-2 border-homesync-ink bg-homesync-tan flex justify-end gap-4">
               <Button
                 variant="outline"
                 onClick={() => setAddItemModalOpen(false)}
                 disabled={createItem.isPending}
+                className="rounded-none border-2 border-homesync-ink bg-transparent text-homesync-ink hover:bg-homesync-cream font-mono text-xs uppercase tracking-widest px-6"
               >
                 Cancel
               </Button>
@@ -487,7 +509,6 @@ export default function Inventory() {
                     toast.error('Please fill in item name and quantity');
                     return;
                   }
-
                   createItem.mutate(
                     {
                       household_id: household.id,
@@ -513,7 +534,7 @@ export default function Inventory() {
                     }
                   );
                 }}
-                className="bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-cyan-600 hover:to-sky-600 text-white border-0"
+                className="rounded-none border-2 border-homesync-ink bg-homesync-rust text-white hover:bg-homesync-bark font-mono text-xs uppercase tracking-widest px-6"
               >
                 {createItem.isPending ? 'Adding...' : 'Add Item'}
               </Button>

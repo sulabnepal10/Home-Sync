@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeftRight,
   ArrowUpRight,
@@ -10,9 +10,10 @@ import {
   Clock,
   Users,
   TrendingUp,
-  Handshake, Trash2
+  Handshake,
+  Trash2,
+  ArrowRight
 } from 'lucide-react';
-// ForceGraph component would be implemented separately
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,18 +48,34 @@ import {
 
 type BalanceRecord = Record<string, { owed: number; lent: number; net: number }>;
 
+/* ─── Fonts & Brand ─── */
+function useFonts() {
+  useEffect(() => {
+    if (document.getElementById('homesync-fonts')) return;
+    const link = document.createElement('link');
+    link.id = 'homesync-fonts';
+    link.rel = 'stylesheet';
+    link.href =
+      'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap';
+    document.head.appendChild(link);
+  }, []);
+}
+
+const grainSvg = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E")`;
+
 export default function Loans() {
+  useFonts();
+
   const { user, members, household } = useAuthStore();
   const { data: loans } = useLoans();
   const { data: balances } = useLoanBalances();
-
   const addLoan = useAddLoan();
   const settleLoan = useSettleLoan();
   const deleteLoan = useDeleteLoan();
+
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'settled' | 'pending'>('all');
-
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [lenderId, setLenderId] = useState('');
@@ -78,39 +95,39 @@ export default function Loans() {
 
   const totalOwed = loans?.filter((l) => l.borrower_id === user?.id && !l.is_settled)
     .reduce((sum, l) => sum + Number(l.amount), 0) || 0;
+
   const totalLent = loans?.filter((l) => l.lender_id === user?.id && !l.is_settled)
     .reduce((sum, l) => sum + Number(l.amount), 0) || 0;
+
   const netBalance = totalLent - totalOwed;
 
-  // Graph data for visualization
-  const graphNodes = members.map((member) => ({
-    id: member.user_id,
-    data: member.profile,
-  }));
-
-  const graphLinks = loans?.filter((l) => !l.is_settled).map((loan) => ({
-    source: loan.lender_id,
-    target: loan.borrower_id,
-    amount: Number(loan.amount),
-  })) || [];
-
   return (
-    <ScrollArea className="h-screen">
-      <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+    <ScrollArea className="h-screen bg-homesync-cream font-body text-homesync-ink relative">
+      {/* Global Grain Overlay */}
+      <div
+        className="fixed inset-0 pointer-events-none z-[999] opacity-40 mix-blend-overlay"
+        style={{ backgroundImage: grainSvg }}
+        aria-hidden="true"
+      />
+
+      <div className="p-6 lg:p-10 max-w-[1200px] mx-auto relative z-10">
+
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-12 border-b-2 border-homesync-sand pb-6">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
+            <div className="font-mono text-[11px] tracking-[0.2em] uppercase text-homesync-rust flex items-center gap-3 mb-3">
+              <div className="w-8 h-[1.5px] bg-homesync-rust" />
+              Debt Tracker
+            </div>
+            <h1 className="text-4xl sm:text-5xl font-display font-black text-homesync-ink tracking-tight">
               Loans & Debts
             </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-1">
-              Track who owes whom in your household
-            </p>
           </motion.div>
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
             <Button
               onClick={() => setAddModalOpen(true)}
-              className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-0"
+              className="rounded-none border-2 border-homesync-ink bg-homesync-ink text-homesync-cream hover:bg-homesync-rust hover:border-homesync-rust font-mono text-xs uppercase tracking-widest px-6 py-6 transition-colors"
             >
               <Plus className="w-4 h-4 mr-2" />
               Record Loan
@@ -123,101 +140,95 @@ export default function Loans() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-0 mb-12 border-t-2 border-l-2 border-homesync-sand"
         >
-          <Card className="bg-gradient-to-br from-teal-500 to-emerald-600 border-0 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <ArrowUpRight className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm text-teal-100">You're Owed</p>
-                  <p className="text-2xl font-bold">${totalLent.toFixed(2)}</p>
-                </div>
+          {/* Card 1: You're Owed */}
+          <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-olive text-white shadow-none hover:bg-homesync-bark transition-colors">
+            <CardContent className="p-6 sm:p-8">
+              <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
+                <ArrowUpRight className="w-6 h-6" />
               </div>
+              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">You're Owed</p>
+              <p className="font-display text-4xl font-bold">
+                ${totalLent.toFixed(2)}
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-500 to-amber-600 border-0 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <ArrowDownRight className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm text-orange-100">You Owe</p>
-                  <p className="text-2xl font-bold">${totalOwed.toFixed(2)}</p>
-                </div>
+          {/* Card 2: You Owe */}
+          <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-rust text-white shadow-none hover:bg-homesync-bark transition-colors">
+            <CardContent className="p-6 sm:p-8">
+              <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
+                <ArrowDownRight className="w-6 h-6" />
               </div>
+              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">You Owe</p>
+              <p className="font-display text-4xl font-bold">
+                ${totalOwed.toFixed(2)}
+              </p>
             </CardContent>
           </Card>
 
+          {/* Card 3: Net Balance */}
           <Card className={cn(
-            'border-0 text-white',
-            netBalance >= 0
-              ? 'bg-gradient-to-br from-sky-500 to-blue-600'
-              : 'bg-gradient-to-br from-rose-500 to-pink-600'
+            'rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand text-white shadow-none hover:bg-homesync-bark transition-colors',
+            netBalance >= 0 ? 'bg-homesync-ink' : 'bg-[#3D2B1F]' // homesync-bark variant if negative
           )}>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm text-sky-100">Net Balance</p>
-                  <p className="text-2xl font-bold">
-                    {netBalance >= 0 ? '+' : ''}${netBalance.toFixed(2)}
-                  </p>
-                </div>
+            <CardContent className="p-6 sm:p-8">
+              <div className="w-12 h-12 border-2 border-white/20 flex items-center justify-center mb-8">
+                <TrendingUp className="w-6 h-6" />
               </div>
+              <p className="font-mono text-xs tracking-widest uppercase text-white/50 mb-2">Net Balance</p>
+              <p className="font-display text-4xl font-bold">
+                {netBalance >= 0 ? '+' : ''}${netBalance.toFixed(2)}
+              </p>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Balance Overview */}
+        {/* Balance Overview & Settlement Suggestions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="grid lg:grid-cols-2 gap-6 mb-8"
+          className="grid lg:grid-cols-2 gap-6 mb-12"
         >
-          <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                <Users className="w-5 h-5" />
+          {/* Member Balances */}
+          <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none h-full flex flex-col">
+            <CardHeader className="border-b-2 border-homesync-sand pb-6 bg-homesync-tan">
+              <CardTitle className="font-display text-2xl font-bold text-homesync-ink flex items-center gap-3">
+                <Users className="w-6 h-6 text-homesync-rust" />
                 Member Balances
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className="p-0 flex-1 bg-white">
+              <div className="divide-y-2 divide-homesync-sand">
                 {members.map((member) => {
                   const balanceRecord = balances as BalanceRecord | undefined;
                   const balance = balanceRecord?.[member.user_id] || { owed: 0, lent: 0, net: 0 };
                   return (
-                    <div key={member.id} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-900">
-                      <Avatar>
-                        <AvatarImage src={member.profile?.avatar_url} />
-                        <AvatarFallback className="bg-gradient-to-br from-sky-500 to-teal-500 text-white">
+                    <div key={member.id} className="flex items-center gap-4 p-5 hover:bg-homesync-cream transition-colors">
+                      <Avatar className="w-10 h-10 rounded-none border-2 border-homesync-ink">
+                        <AvatarImage src={member.profile?.avatar_url} className="rounded-none" />
+                        <AvatarFallback className="text-xs font-mono rounded-none bg-homesync-ink text-white">
                           {getInitials(member.profile?.full_name || '')}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1">
-                        <p className="font-medium text-slate-900 dark:text-white">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-display text-lg font-bold text-homesync-ink truncate mb-1">
                           {member.profile?.full_name}
                         </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-xs">
+                        <div className="flex items-center gap-2">
+                          <Badge className="rounded-none bg-transparent border border-homesync-sand text-homesync-muted font-mono text-[9px] uppercase tracking-widest hover:bg-transparent">
                             Owed: ${balance.owed.toFixed(2)}
                           </Badge>
-                          <Badge variant="outline" className="text-xs">
+                          <Badge className="rounded-none bg-transparent border border-homesync-sand text-homesync-muted font-mono text-[9px] uppercase tracking-widest hover:bg-transparent">
                             Lent: ${balance.lent.toFixed(2)}
                           </Badge>
                         </div>
                       </div>
                       <div className={cn(
-                        'text-right font-semibold',
-                        balance.net >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-orange-600 dark:text-orange-400'
+                        'text-right font-mono text-sm font-bold',
+                        balance.net >= 0 ? 'text-homesync-olive' : 'text-homesync-rust'
                       )}>
                         {balance.net >= 0 ? '+' : ''}${balance.net.toFixed(2)}
                       </div>
@@ -228,17 +239,17 @@ export default function Loans() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                <Handshake className="w-5 h-5" />
-                Settlement Suggestions
+          {/* Settlement Suggestions */}
+          <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none h-full flex flex-col">
+            <CardHeader className="border-b-2 border-homesync-sand pb-6 bg-homesync-tan">
+              <CardTitle className="font-display text-2xl font-bold text-homesync-ink flex items-center gap-3">
+                <Handshake className="w-6 h-6 text-homesync-olive" />
+                Action Plan
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className="p-0 flex-1 bg-white">
+              <div className="divide-y-2 divide-homesync-sand h-full">
                 {(() => {
-                  // Simple settlement suggestions
                   const suggestions: { from: string; to: string; amount: number }[] = [];
                   const balanceRecord = balances as BalanceRecord | undefined;
                   const memberBalances = members.map((m) => ({
@@ -255,49 +266,47 @@ export default function Loans() {
                       if (debtor.balance < 0 && creditor.balance > 0) {
                         const amount = Math.min(-debtor.balance, creditor.balance);
                         if (amount > 0.01) {
-                          suggestions.push({
-                            from: debtor.id,
-                            to: creditor.id,
-                            amount,
-                          });
+                          suggestions.push({ from: debtor.id, to: creditor.id, amount });
+                          debtor.balance += amount;
+                          creditor.balance -= amount;
                         }
                       }
                     });
                   });
 
-                  return suggestions.length > 0 ? suggestions.map((s) => {
+                  return suggestions.length > 0 ? suggestions.map((s, i) => {
                     const debtor = members.find((m) => m.user_id === s.from);
                     const creditor = members.find((m) => m.user_id === s.to);
                     return (
-                      <div key={`${s.from}-${s.to}`} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-900">
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={debtor?.profile?.avatar_url} />
-                          <AvatarFallback className="text-xs">
+                      <div key={i} className="flex items-center gap-4 p-5 hover:bg-homesync-cream transition-colors">
+                        <Avatar className="w-8 h-8 rounded-none border border-homesync-ink hidden sm:block">
+                          <AvatarImage src={debtor?.profile?.avatar_url} className="rounded-none" />
+                          <AvatarFallback className="text-[10px] font-mono rounded-none bg-homesync-tan text-homesync-ink">
                             {getInitials(debtor?.profile?.full_name || '')}
                           </AvatarFallback>
                         </Avatar>
-                        <ArrowRight className="w-4 h-4 text-slate-400" />
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={creditor?.profile?.avatar_url} />
-                          <AvatarFallback className="text-xs">
-                            {getInitials(creditor?.profile?.full_name || '')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <p className="text-sm text-slate-900 dark:text-white">
-                            {debtor?.profile?.full_name} pays {creditor?.profile?.full_name}
-                          </p>
+
+                        <div className="flex-1 text-sm font-body text-homesync-ink flex flex-col sm:flex-row sm:items-center gap-1">
+                          <span className="font-bold">{debtor?.profile?.full_name}</span>
+                          <span className="text-homesync-muted font-mono text-[10px] uppercase tracking-widest mx-1 flex items-center gap-1">
+                            <ArrowRight className="w-3 h-3 hidden sm:inline" />
+                            Pays
+                          </span>
+                          <span className="font-bold">{creditor?.profile?.full_name}</span>
                         </div>
-                        <p className="font-semibold text-slate-900 dark:text-white">
+
+                        <p className="font-display font-bold text-lg text-homesync-ink">
                           ${s.amount.toFixed(2)}
                         </p>
                       </div>
                     );
                   }) : (
-                    <div className="text-center py-8 text-slate-500">
-                      <CheckCircle className="w-12 h-12 mx-auto mb-3 text-teal-500" />
-                      <p className="font-medium text-slate-900 dark:text-white">All settled!</p>
-                      <p className="text-sm">No outstanding debts to settle</p>
+                    <div className="h-full flex flex-col items-center justify-center py-16 text-homesync-muted p-6 text-center">
+                      <div className="w-16 h-16 border-2 border-homesync-olive bg-homesync-tan flex items-center justify-center mb-4">
+                        <CheckCircle className="w-8 h-8 text-homesync-olive" />
+                      </div>
+                      <p className="font-display text-2xl font-bold text-homesync-ink mb-2">All settled!</p>
+                      <p className="font-mono text-xs uppercase tracking-widest text-homesync-muted">No outstanding debts</p>
                     </div>
                   );
                 })()}
@@ -312,146 +321,145 @@ export default function Loans() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-homesync-muted" />
               <Input
-                placeholder="Search loans..."
+                placeholder="Search records..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-12 rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body text-base h-12"
               />
             </div>
             <Select value={filter} onValueChange={(v) => setFilter(v as 'all' | 'settled' | 'pending')}>
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue />
+              <SelectTrigger className="w-full sm:w-48 rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-mono text-xs uppercase tracking-widest">
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Loans</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="settled">Settled</SelectItem>
+              <SelectContent className="rounded-none border-2 border-homesync-ink font-mono text-xs uppercase tracking-widest bg-homesync-cream">
+                <SelectItem value="all" className="focus:bg-homesync-tan rounded-none">All Loans</SelectItem>
+                <SelectItem value="pending" className="focus:bg-homesync-tan rounded-none">Pending</SelectItem>
+                <SelectItem value="settled" className="focus:bg-homesync-tan rounded-none">Settled</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
+          <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none">
             <CardContent className="p-0">
               {filteredLoans.length > 0 ? (
-                <div className="divide-y divide-slate-200 dark:divide-slate-700">
-                  {filteredLoans.map((loan, index) => (
-                    <motion.div
-                      key={loan.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
-                    >
-                      <div className={cn(
-                        'w-12 h-12 rounded-xl flex items-center justify-center',
-                        loan.is_settled
-                          ? 'bg-teal-100 dark:bg-teal-900/30'
-                          : 'bg-orange-100 dark:bg-orange-900/30'
-                      )}>
-                        <ArrowLeftRight className={cn(
-                          'w-6 h-6',
+                <div className="divide-y-2 divide-homesync-sand bg-white">
+                  <AnimatePresence>
+                    {filteredLoans.map((loan, index) => (
+                      <motion.div
+                        key={loan.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 hover:bg-homesync-cream transition-colors"
+                      >
+                        <div className={cn(
+                          'w-12 h-12 border-2 flex items-center justify-center rounded-none flex-shrink-0',
                           loan.is_settled
-                            ? 'text-teal-600 dark:text-teal-400'
-                            : 'text-orange-600 dark:text-orange-400'
-                        )} />
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-900 dark:text-white truncate">
-                          {loan.description}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Avatar className="w-4 h-4">
-                            <AvatarImage src={loan.lender?.avatar_url} />
-                            <AvatarFallback className="text-[6px]">
-                              {getInitials(loan.lender?.full_name || '')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <ArrowRight className="w-3 h-3 text-slate-400" />
-                          <Avatar className="w-4 h-4">
-                            <AvatarImage src={loan.borrower?.avatar_url} />
-                            <AvatarFallback className="text-[6px]">
-                              {getInitials(loan.borrower?.full_name || '')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-xs text-slate-500">
-                            {loan.lender?.full_name} lent to {loan.borrower?.full_name}
-                          </span>
+                            ? 'border-homesync-olive bg-homesync-tan text-homesync-olive'
+                            : 'border-homesync-rust bg-homesync-tan text-homesync-rust'
+                        )}>
+                          <ArrowLeftRight className="w-5 h-5" />
                         </div>
-                      </div>
 
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="text-right">
-                          <p className="font-semibold text-slate-900 dark:text-white">
-                            ${parseFloat(String(loan.amount)).toFixed(2)}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-display font-bold text-lg text-homesync-ink truncate mb-2">
+                            {loan.description}
                           </p>
-                          {loan.is_settled ? (
-                            <Badge className="bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 border-0">
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Settled
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-0">
-                              <Clock className="w-3 h-3 mr-1" />
-                              Pending
-                            </Badge>
-                          )}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted">From</span>
+                            <Avatar className="w-5 h-5 rounded-none border border-homesync-ink">
+                              <AvatarImage src={loan.lender?.avatar_url} className="rounded-none" />
+                              <AvatarFallback className="text-[8px] font-mono rounded-none bg-homesync-ink text-white">
+                                {getInitials(loan.lender?.full_name || '')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-body text-xs font-bold text-homesync-ink">{loan.lender?.full_name}</span>
+
+                            <ArrowRight className="w-3 h-3 text-homesync-sand mx-1" />
+
+                            <span className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted">To</span>
+                            <Avatar className="w-5 h-5 rounded-none border border-homesync-ink">
+                              <AvatarImage src={loan.borrower?.avatar_url} className="rounded-none" />
+                              <AvatarFallback className="text-[8px] font-mono rounded-none bg-homesync-tan text-homesync-ink">
+                                {getInitials(loan.borrower?.full_name || '')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-body text-xs font-bold text-homesync-ink">{loan.borrower?.full_name}</span>
+                          </div>
                         </div>
 
-                        {/* Action Buttons (Only show to the lender) */}
-                        {user?.id === loan.lender_id && (
-                          <div className="flex items-center gap-1 mt-1">
-                            {!loan.is_settled && (
+                        <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-3 mt-4 sm:mt-0">
+                          <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
+                            <p className="font-display font-bold text-xl text-homesync-ink">
+                              ${parseFloat(String(loan.amount)).toFixed(2)}
+                            </p>
+                            {loan.is_settled ? (
+                              <Badge className="font-mono text-[9px] tracking-widest uppercase bg-homesync-olive text-white rounded-none border-none">
+                                Settled
+                              </Badge>
+                            ) : (
+                              <Badge className="font-mono text-[9px] tracking-widest uppercase bg-transparent border-2 border-homesync-rust text-homesync-rust rounded-none">
+                                Pending
+                              </Badge>
+                            )}
+                          </div>
+
+                          {/* Action Buttons (Only show to the lender) */}
+                          {user?.id === loan.lender_id && (
+                            <div className="flex items-center gap-2">
+                              {!loan.is_settled && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 rounded-none border-2 border-homesync-olive text-homesync-olive hover:bg-homesync-olive hover:text-white font-mono text-[10px] uppercase tracking-widest px-3"
+                                  disabled={settleLoan.isPending}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    settleLoan.mutate(loan.id, {
+                                      onSuccess: () => toast.success('Loan marked as settled!')
+                                    });
+                                  }}
+                                >
+                                  Settle
+                                </Button>
+                              )}
                               <Button
                                 variant="outline"
-                                size="sm"
-                                className="h-7 text-xs text-teal-600 border-teal-200 hover:bg-teal-50 dark:hover:bg-teal-900/20"
-                                disabled={settleLoan.isPending}
+                                size="icon"
+                                className="h-8 w-8 rounded-none border-2 border-homesync-rust text-homesync-rust hover:bg-homesync-rust hover:text-white"
+                                disabled={deleteLoan.isPending}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  settleLoan.mutate(loan.id, {
-                                    onSuccess: () => toast.success('Loan marked as settled!')
-                                  });
+                                  if (window.confirm('Are you sure you want to delete this loan?')) {
+                                    deleteLoan.mutate(loan.id, {
+                                      onSuccess: () => toast.success('Loan deleted')
+                                    });
+                                  }
                                 }}
                               >
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Settle
+                                <Trash2 className="w-3 h-3" />
                               </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
-                              disabled={deleteLoan.isPending}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (window.confirm('Are you sure you want to delete this loan?')) {
-                                  deleteLoan.mutate(loan.id, {
-                                    onSuccess: () => toast.success('Loan deleted')
-                                  });
-                                }
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-16 text-slate-500">
-                  <ArrowLeftRight className="w-16 h-16 mb-4 text-slate-300" />
-                  <p className="text-lg font-medium text-slate-900 dark:text-white mb-1">
-                    No loans yet
+                <div className="flex flex-col items-center justify-center py-20 text-homesync-muted bg-white border-2 border-dashed border-homesync-sand m-4">
+                  <ArrowLeftRight className="w-12 h-12 mb-4 text-homesync-sand opacity-50" />
+                  <p className="font-display text-2xl font-bold text-homesync-ink mb-2">
+                    No records found
                   </p>
-                  <p className="text-sm">
-                    {searchQuery ? 'Try adjusting your search' : 'Record a loan to track debts between members'}
+                  <p className="font-mono text-xs uppercase tracking-widest text-homesync-muted text-center px-4">
+                    {searchQuery ? 'Adjust your search filters' : 'Record a loan to start tracking debts'}
                   </p>
                 </div>
               )}
@@ -461,19 +469,19 @@ export default function Loans() {
 
         {/* Add Loan Modal */}
         <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Record a Loan</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="max-w-md rounded-none border-2 border-homesync-ink bg-homesync-cream p-0 shadow-[8px_8px_0px_rgba(26,18,9,1)]">
+            <DialogHeader className="p-6 border-b-2 border-homesync-ink bg-homesync-tan">
+              <DialogTitle className="font-display text-3xl font-black text-homesync-ink">Record Loan</DialogTitle>
+              <DialogDescription className="font-body text-homesync-muted text-sm mt-2">
                 Track money lent or borrowed between household members.
               </DialogDescription>
             </DialogHeader>
+            <div className="p-6 space-y-6">
 
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="loan-amount">Amount</Label>
+              <div className="space-y-3">
+                <Label htmlFor="loan-amount" className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Amount</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-homesync-muted font-mono">$</span>
                   <Input
                     id="loan-amount"
                     type="number"
@@ -481,45 +489,46 @@ export default function Loans() {
                     placeholder="0.00"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="pl-8"
+                    className="pl-8 rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-mono text-lg h-12"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="loan-description">Description</Label>
+              <div className="space-y-3">
+                <Label htmlFor="loan-description" className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Description</Label>
                 <Input
                   id="loan-description"
                   placeholder="What was this loan for?"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Borrower</Label>
-                  <Select value={borrowerId} onValueChange={setBorrowerId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select borrower" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {members.filter((m) => m.user_id !== lenderId).map((member) => (
-                        <SelectItem key={member.user_id} value={member.user_id}>
-                          {member.profile?.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-3">
+                <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Borrower</Label>
+                <Select value={borrowerId} onValueChange={setBorrowerId}>
+                  <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-body">
+                    <SelectValue placeholder="Select borrower" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-none border-2 border-homesync-ink bg-homesync-cream font-body">
+                    {members.filter((m) => m.user_id !== lenderId).map((member) => (
+                      <SelectItem key={member.user_id} value={member.user_id} className="focus:bg-homesync-tan rounded-none cursor-pointer">
+                        {member.profile?.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+
             </div>
 
-            <div className="flex justify-end gap-3">
+            <div className="p-6 border-t-2 border-homesync-ink bg-homesync-tan flex justify-end gap-4">
               <Button
                 variant="outline"
                 onClick={() => setAddModalOpen(false)}
                 disabled={addLoan.isPending}
+                className="rounded-none border-2 border-homesync-ink bg-transparent text-homesync-ink hover:bg-homesync-cream font-mono text-xs uppercase tracking-widest px-6"
               >
                 Cancel
               </Button>
@@ -538,7 +547,6 @@ export default function Loans() {
                     toast.error('You cannot lend money to yourself');
                     return;
                   }
-
                   addLoan.mutate(
                     {
                       household_id: household.id,
@@ -550,7 +558,6 @@ export default function Loans() {
                       onSuccess: () => {
                         toast.success('Loan recorded successfully!');
                         setAddModalOpen(false);
-                        // Reset form
                         setAmount('');
                         setDescription('');
                         setBorrowerId('');
@@ -562,7 +569,7 @@ export default function Loans() {
                     }
                   );
                 }}
-                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-0"
+                className="rounded-none border-2 border-homesync-ink bg-homesync-rust text-white hover:bg-homesync-bark font-mono text-xs uppercase tracking-widest px-6"
               >
                 {addLoan.isPending ? 'Recording...' : 'Record Loan'}
               </Button>
@@ -572,8 +579,4 @@ export default function Loans() {
       </div>
     </ScrollArea>
   );
-}
-
-function ArrowRight({ className }: { className?: string }) {
-  return <ArrowUpRight className={className} />;
 }

@@ -9,12 +9,24 @@ export default {
   ],
   theme: {
     extend: {
-      borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+      fontFamily: {
+        display: ['Playfair Display', 'Georgia', 'serif'],
+        mono: ['DM Mono', 'Courier New', 'monospace'],
+        body: ['DM Sans', 'system-ui', 'sans-serif'],
       },
       colors: {
+        // Injected HomeSync Brand Colors
+        homesync: {
+          cream: '#F5F0E8',
+          tan: '#E8DFD0',
+          bark: '#3D2B1F',
+          rust: '#C84B31',
+          olive: '#2C6E49',
+          sand: '#D4B896',
+          ink: '#1A1209',
+          muted: '#7A6755',
+        },
+        // Existing Shadcn UI Colors
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
@@ -56,22 +68,19 @@ export default {
           5: 'hsl(var(--chart-5))',
         },
       },
+      borderRadius: {
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
+      },
       keyframes: {
         'accordion-down': {
-          from: {
-            height: '0',
-          },
-          to: {
-            height: 'var(--radix-accordion-content-height)',
-          },
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
         },
         'accordion-up': {
-          from: {
-            height: 'var(--radix-accordion-content-height)',
-          },
-          to: {
-            height: '0',
-          },
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
         },
       },
       animation: {

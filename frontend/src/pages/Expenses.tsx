@@ -1,21 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   Search,
   Filter,
   Wallet,
-  Calendar,
-  Tag,
-  Users,
   MoreHorizontal,
   Edit,
   Trash2,
-  Check,
-  X,
   ArrowUpRight,
   ArrowDownRight,
-  Download,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -25,8 +19,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  BarChart,
-  Bar,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -63,6 +55,21 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
+/* ─── Fonts & Brand ─── */
+function useFonts() {
+  useEffect(() => {
+    if (document.getElementById('homesync-fonts')) return;
+    const link = document.createElement('link');
+    link.id = 'homesync-fonts';
+    link.rel = 'stylesheet';
+    link.href =
+      'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap';
+    document.head.appendChild(link);
+  }, []);
+}
+
+const grainSvg = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E")`;
+
 const categories = [
   { value: 'groceries', label: 'Groceries', icon: '🛒' },
   { value: 'utilities', label: 'Utilities', icon: '💡' },
@@ -74,11 +81,11 @@ const categories = [
   { value: 'other', label: 'Other', icon: '📦' },
 ];
 
-const COLORS = ['#0ea5e9', '#14b8a6', '#f59e0b', '#f97316', '#ef4444', '#8b5cf6'];
-
 export default function Expenses() {
-  const { user, household, members } = useAuthStore();
-  const { data: expenses, isLoading } = useExpenses();
+  useFonts();
+
+  const { members, household } = useAuthStore();
+  const { data: expenses } = useExpenses();
   const { data: expenseSummary } = useExpenseSummary();
   const addExpense = useAddExpense();
 
@@ -91,7 +98,6 @@ export default function Expenses() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('groceries');
   const [splitType, setSplitType] = useState<'equal' | 'custom'>('equal');
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [customSplits, setCustomSplits] = useState<Record<string, string>>({});
 
   const filteredExpenses = expenses?.filter((expense) => {
@@ -104,16 +110,10 @@ export default function Expenses() {
   }) || [];
 
   // Chart data
-  const chartData = expenses?.slice(0, 7).reverse().map((expense, index) => ({
+  const chartData = expenses?.slice(0, 7).reverse().map((expense) => ({
     name: format(new Date(expense.created_at), 'MMM d'),
     amount: Number(expense.amount),
   })) || [];
-
-  const categoryBreakdown = expenses?.reduce((acc, expense) => {
-    const cat = expense.category || 'other';
-    acc[cat] = (acc[cat] || 0) + Number(expense.amount);
-    return acc;
-  }, {} as Record<string, number>);
 
   const getInitials = (name: string) =>
     name?.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
@@ -123,21 +123,17 @@ export default function Expenses() {
       toast.error('Please fill in all required fields');
       return;
     }
-
     if (!household) {
       toast.error('No household selected');
       return;
     }
-
     const amountNum = parseFloat(amount);
     if (isNaN(amountNum) || amountNum <= 0) {
       toast.error('Please enter a valid amount');
       return;
     }
-
     try {
       let splits: { user_id: string; amount: number }[] = [];
-
       if (splitType === 'equal') {
         const splitAmount = amountNum / members.length;
         splits = members.map((member) => ({
@@ -157,7 +153,6 @@ export default function Expenses() {
             amount: parseFloat(value),
           }));
       }
-
       await addExpense.mutateAsync({
         household_id: household.id,
         amount: amountNum,
@@ -166,7 +161,6 @@ export default function Expenses() {
         split_type: splitType,
         splits,
       });
-
       toast.success('Expense added successfully');
       setAddModalOpen(false);
       resetForm();
@@ -180,37 +174,39 @@ export default function Expenses() {
     setDescription('');
     setCategory('groceries');
     setSplitType('equal');
-    setSelectedMembers([]);
     setCustomSplits({});
   };
 
   return (
-    <ScrollArea className="h-screen">
-      <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+    <ScrollArea className="h-screen bg-homesync-cream font-body text-homesync-ink relative">
+      {/* Global Grain Overlay */}
+      <div
+        className="fixed inset-0 pointer-events-none z-[999] opacity-40 mix-blend-overlay"
+        style={{ backgroundImage: grainSvg }}
+        aria-hidden="true"
+      />
+
+      <div className="p-6 lg:p-10 max-w-[1200px] mx-auto relative z-10">
+
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-12 border-b-2 border-homesync-sand pb-6">
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="font-mono text-[11px] tracking-[0.2em] uppercase text-homesync-rust flex items-center gap-3 mb-3">
+              <div className="w-8 h-[1.5px] bg-homesync-rust" />
+              Shared Ledger
+            </div>
+            <h1 className="text-4xl sm:text-5xl font-display font-black text-homesync-ink tracking-tight">
               Expenses
             </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-1">
-              Track and manage shared expenses
-            </p>
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-          >
+
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
             <Button
               onClick={() => setAddModalOpen(true)}
-              className="bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white border-0"
+              className="rounded-none border-2 border-homesync-ink bg-homesync-ink text-homesync-cream hover:bg-homesync-rust hover:border-homesync-rust font-mono text-xs uppercase tracking-widest px-6 py-6 transition-colors"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add Expense
+              Log Expense
             </Button>
           </motion.div>
         </div>
@@ -220,53 +216,44 @@ export default function Expenses() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-0 mb-12 border-t-2 border-l-2 border-homesync-sand"
         >
-          <Card className="bg-gradient-to-br from-sky-500 to-sky-600 border-0 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <Wallet className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm text-sky-100">Total Spent</p>
-                  <p className="text-2xl font-bold">
-                    ${expenseSummary?.totalSpent.toFixed(2) || '0.00'}
-                  </p>
-                </div>
+          {/* Card 1: Total Spent */}
+          <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-rust text-white shadow-none hover:bg-homesync-bark transition-colors">
+            <CardContent className="p-6 sm:p-8">
+              <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
+                <Wallet className="w-6 h-6" />
               </div>
+              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Total Spent</p>
+              <p className="font-display text-4xl font-bold">
+                ${expenseSummary?.totalSpent.toFixed(2) || '0.00'}
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-teal-500 to-emerald-600 border-0 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <ArrowUpRight className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm text-teal-100">You're Owed</p>
-                  <p className="text-2xl font-bold">
-                    ${Math.max(expenseSummary?.netBalance || 0, 0).toFixed(2)}
-                  </p>
-                </div>
+          {/* Card 2: You're Owed */}
+          <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-olive text-white shadow-none hover:bg-homesync-bark transition-colors">
+            <CardContent className="p-6 sm:p-8">
+              <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
+                <ArrowUpRight className="w-6 h-6" />
               </div>
+              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">You're Owed</p>
+              <p className="font-display text-4xl font-bold">
+                ${Math.max(expenseSummary?.netBalance || 0, 0).toFixed(2)}
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-500 to-amber-600 border-0 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <ArrowDownRight className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm text-orange-100">You Owe</p>
-                  <p className="text-2xl font-bold">
-                    ${Math.max(-(expenseSummary?.netBalance || 0), 0).toFixed(2)}
-                  </p>
-                </div>
+          {/* Card 3: You Owe */}
+          <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-ink text-homesync-cream shadow-none hover:bg-homesync-bark transition-colors">
+            <CardContent className="p-6 sm:p-8">
+              <div className="w-12 h-12 border-2 border-white/20 flex items-center justify-center mb-8">
+                <ArrowDownRight className="w-6 h-6" />
               </div>
+              <p className="font-mono text-xs tracking-widest uppercase text-white/50 mb-2">You Owe</p>
+              <p className="font-display text-4xl font-bold">
+                ${Math.max(-(expenseSummary?.netBalance || 0), 0).toFixed(2)}
+              </p>
             </CardContent>
           </Card>
         </motion.div>
@@ -276,39 +263,43 @@ export default function Expenses() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mb-8"
+          className="mb-12"
         >
-          <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                Spending Overview
+          <Card className="rounded-none border-2 border-homesync-sand bg-white shadow-none">
+            <CardHeader className="border-b-2 border-homesync-sand pb-6">
+              <CardTitle className="font-display text-2xl font-bold text-homesync-ink">
+                Spending Timeline
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-64">
+            <CardContent className="pt-6">
+              <div className="h-72">
                 {chartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData}>
+                    <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorAmount2" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                          <stop offset="5%" stopColor="#C84B31" stopOpacity={0.2} />
+                          <stop offset="95%" stopColor="#C84B31" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-                      <YAxis stroke="#94a3b8" fontSize={12} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E8DFD0" vertical={false} />
+                      <XAxis dataKey="name" stroke="#7A6755" fontSize={12} fontFamily="var(--ff-mono)" tickLine={false} axisLine={false} dy={10} />
+                      <YAxis stroke="#7A6755" fontSize={12} fontFamily="var(--ff-mono)" tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '8px',
+                          backgroundColor: '#F5F0E8',
+                          border: '2px solid #1A1209',
+                          borderRadius: '0',
+                          fontFamily: 'var(--ff-mono)',
+                          fontSize: '12px',
+                          textTransform: 'uppercase'
                         }}
+                        itemStyle={{ color: '#1A1209', fontWeight: 'bold' }}
                       />
                       <Area
-                        type="monotone"
+                        type="step"
                         dataKey="amount"
-                        stroke="#0ea5e9"
+                        stroke="#C84B31"
                         strokeWidth={2}
                         fillOpacity={1}
                         fill="url(#colorAmount2)"
@@ -316,7 +307,7 @@ export default function Expenses() {
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-slate-500">
+                  <div className="h-full flex items-center justify-center font-mono text-sm uppercase tracking-widest text-homesync-muted">
                     No expense data yet. Add your first expense!
                   </div>
                 )}
@@ -333,23 +324,25 @@ export default function Expenses() {
           className="flex flex-col sm:flex-row gap-4 mb-6"
         >
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-homesync-muted" />
             <Input
               placeholder="Search expenses..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-12 rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body text-base h-12"
             />
           </div>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full sm:w-48">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="All Categories" />
+            <SelectTrigger className="w-full sm:w-64 rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-mono text-xs uppercase tracking-widest">
+              <div className="flex items-center">
+                <Filter className="w-4 h-4 mr-3 text-homesync-muted" />
+                <SelectValue placeholder="All Categories" />
+              </div>
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
+            <SelectContent className="rounded-none border-2 border-homesync-ink font-mono text-xs uppercase tracking-widest bg-homesync-cream">
+              <SelectItem value="all" className="focus:bg-homesync-tan rounded-none">All Categories</SelectItem>
               {categories.map((cat) => (
-                <SelectItem key={cat.value} value={cat.value}>
+                <SelectItem key={cat.value} value={cat.value} className="focus:bg-homesync-tan rounded-none">
                   {cat.icon} {cat.label}
                 </SelectItem>
               ))}
@@ -363,73 +356,63 @@ export default function Expenses() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur border-slate-200 dark:border-slate-700">
+          <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none">
             <CardContent className="p-0">
               {filteredExpenses.length > 0 ? (
-                <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                <div className="divide-y-2 divide-homesync-sand bg-white">
                   {filteredExpenses.map((expense, index) => (
                     <motion.div
                       key={expense.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                      className="flex items-center gap-5 p-5 hover:bg-homesync-cream transition-colors"
                     >
-                      <div
-                        className={cn(
-                          'w-12 h-12 rounded-xl flex items-center justify-center text-xl',
-                          'bg-slate-100 dark:bg-slate-700'
-                        )}
-                      >
+                      <div className="w-12 h-12 border-2 border-homesync-ink bg-homesync-tan flex items-center justify-center text-xl rounded-none">
                         {categories.find((c) => c.value === expense.category)?.icon || '📦'}
                       </div>
-
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-900 dark:text-white truncate">
+                        <p className="font-display font-bold text-lg text-homesync-ink truncate">
                           {expense.description}
                         </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="secondary" className="text-xs">
+                        <div className="flex items-center gap-3 mt-1">
+                          <Badge className="rounded-none bg-transparent border border-homesync-sand text-homesync-muted font-mono text-[10px] uppercase tracking-widest hover:bg-transparent">
                             {expense.category}
                           </Badge>
-                          <span className="text-xs text-slate-500">
+                          <span className="font-mono text-[10px] uppercase tracking-widest text-homesync-sand">
                             {formatDistanceToNow(new Date(expense.created_at), { addSuffix: true })}
                           </span>
                         </div>
                       </div>
-
                       <div className="text-right">
-                        <p className="font-semibold text-slate-900 dark:text-white">
+                        <p className="font-display font-bold text-xl text-homesync-ink">
                           ${parseFloat(String(expense.amount)).toFixed(2)}
                         </p>
-                        <div className="flex items-center gap-1 mt-1 justify-end">
-                          <Avatar className="w-5 h-5">
-                            <AvatarImage src={expense.payer?.avatar_url} />
-                            <AvatarFallback className="text-[8px]">
+                        <div className="flex items-center gap-2 mt-2 justify-end">
+                          <span className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted">
+                            Paid by
+                          </span>
+                          <Avatar className="w-5 h-5 rounded-none border border-homesync-ink">
+                            <AvatarImage src={expense.payer?.avatar_url} className="rounded-none" />
+                            <AvatarFallback className="text-[8px] font-mono rounded-none bg-homesync-ink text-white">
                               {getInitials(expense.payer?.full_name || '')}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-xs text-slate-500">
-                            {expense.payer?.full_name}
-                          </span>
                         </div>
                       </div>
-
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="w-4 h-4" />
+                          <Button variant="ghost" size="icon" className="rounded-none hover:bg-homesync-tan">
+                            <MoreHorizontal className="w-5 h-5 text-homesync-ink" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit
+                        <DropdownMenuContent align="end" className="rounded-none border-2 border-homesync-ink font-mono text-xs uppercase tracking-widest bg-homesync-cream p-0">
+                          <DropdownMenuItem className="rounded-none focus:bg-homesync-tan p-3 cursor-pointer">
+                            <Edit className="w-4 h-4 mr-3" /> Edit
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
+                          <DropdownMenuSeparator className="bg-homesync-ink m-0" />
+                          <DropdownMenuItem className="rounded-none focus:bg-homesync-rust focus:text-white text-homesync-rust p-3 cursor-pointer">
+                            <Trash2 className="w-4 h-4 mr-3" /> Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -437,14 +420,14 @@ export default function Expenses() {
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-16 text-slate-500">
-                  <Wallet className="w-16 h-16 mb-4 text-slate-300" />
-                  <p className="text-lg font-medium text-slate-900 dark:text-white mb-1">
-                    No expenses yet
+                <div className="flex flex-col items-center justify-center py-20 text-homesync-muted bg-white border-2 border-dashed border-homesync-sand m-4">
+                  <Wallet className="w-12 h-12 mb-4 text-homesync-sand opacity-50" />
+                  <p className="font-display text-2xl font-bold text-homesync-ink mb-2">
+                    No records found
                   </p>
-                  <p className="text-sm">
+                  <p className="font-mono text-xs uppercase tracking-widest text-homesync-muted">
                     {searchQuery
-                      ? 'Try adjusting your search or filters'
+                      ? 'Adjust your search or filters'
                       : 'Add your first expense to get started'}
                   </p>
                 </div>
@@ -455,19 +438,18 @@ export default function Expenses() {
 
         {/* Add Expense Modal */}
         <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add New Expense</DialogTitle>
-              <DialogDescription>
-                Track a shared expense and split it with your household members.
+          <DialogContent className="max-w-md rounded-none border-2 border-homesync-ink bg-homesync-cream p-0 shadow-[8px_8px_0px_rgba(26,18,9,1)]">
+            <DialogHeader className="p-6 border-b-2 border-homesync-ink bg-homesync-tan">
+              <DialogTitle className="font-display text-3xl font-black text-homesync-ink">Log Expense</DialogTitle>
+              <DialogDescription className="font-body text-homesync-muted text-sm mt-2">
+                Track a shared expense and split it with the household.
               </DialogDescription>
             </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount</Label>
+            <div className="p-6 space-y-6">
+              <div className="space-y-3">
+                <Label htmlFor="amount" className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Amount</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-homesync-muted font-mono">$</span>
                   <Input
                     id="amount"
                     type="number"
@@ -475,30 +457,31 @@ export default function Expenses() {
                     placeholder="0.00"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="pl-8"
+                    className="pl-8 rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-mono text-lg h-12"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+              <div className="space-y-3">
+                <Label htmlFor="description" className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Description</Label>
                 <Input
                   id="description"
                   placeholder="What was this expense for?"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+              <div className="space-y-3">
+                <Label htmlFor="category" className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Category</Label>
                 <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-body">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-none border-2 border-homesync-ink bg-homesync-cream font-body">
                     {categories.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
+                      <SelectItem key={cat.value} value={cat.value} className="focus:bg-homesync-tan rounded-none cursor-pointer">
                         {cat.icon} {cat.label}
                       </SelectItem>
                     ))}
@@ -506,43 +489,62 @@ export default function Expenses() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Split Type</Label>
+              <div className="space-y-3 pt-2">
+                <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Split Strategy</Label>
                 <Tabs value={splitType} onValueChange={(v) => setSplitType(v as 'equal' | 'custom')}>
-                  <TabsList className="grid grid-cols-2">
-                    <TabsTrigger value="equal">Split Equally</TabsTrigger>
-                    <TabsTrigger value="custom">Custom Split</TabsTrigger>
+                  <TabsList className="grid grid-cols-2 bg-transparent border-2 border-homesync-ink rounded-none p-0 h-auto">
+                    <TabsTrigger
+                      value="equal"
+                      className="rounded-none font-mono text-[10px] uppercase tracking-widest py-3 data-[state=active]:bg-homesync-ink data-[state=active]:text-white transition-none"
+                    >
+                      Equal Split
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="custom"
+                      className="rounded-none font-mono text-[10px] uppercase tracking-widest py-3 data-[state=active]:bg-homesync-ink data-[state=active]:text-white transition-none"
+                    >
+                      Custom Split
+                    </TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="equal" className="pt-4">
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      Will be split equally among all {members.length} members ({members.length > 0 && amount && `$${(parseFloat(amount || '0') / members.length).toFixed(2)} each`})
-                    </p>
+                    <div className="bg-white border-2 border-homesync-sand p-4 text-sm font-mono text-homesync-muted">
+                      Splitting equally among {members.length} members.
+                      <br />
+                      <span className="text-homesync-ink font-bold mt-2 inline-block">
+                        {members.length > 0 && amount && `$${(parseFloat(amount || '0') / members.length).toFixed(2)} per person`}
+                      </span>
+                    </div>
                   </TabsContent>
 
-                  <TabsContent value="custom" className="pt-4 space-y-3">
+                  <TabsContent value="custom" className="pt-4 space-y-3 max-h-[200px] overflow-y-auto pr-2">
                     {members.map((member) => (
-                      <div key={member.user_id} className="flex items-center gap-3">
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={member.profile?.avatar_url} />
-                          <AvatarFallback className="text-xs">
+                      <div key={member.user_id} className="flex items-center gap-3 bg-white border border-homesync-sand p-3">
+                        <Avatar className="w-8 h-8 rounded-none border border-homesync-ink">
+                          <AvatarImage src={member.profile?.avatar_url} className="rounded-none" />
+                          <AvatarFallback className="text-[10px] font-mono rounded-none bg-homesync-tan text-homesync-ink">
                             {getInitials(member.profile?.full_name || '')}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="flex-1 text-sm">{member.profile?.full_name}</span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          value={customSplits[member.user_id] || ''}
-                          onChange={(e) =>
-                            setCustomSplits((prev) => ({
-                              ...prev,
-                              [member.user_id]: e.target.value,
-                            }))
-                          }
-                          className="w-24"
-                        />
+                        <span className="flex-1 font-body text-sm font-bold text-homesync-ink truncate">
+                          {member.profile?.full_name}
+                        </span>
+                        <div className="relative w-24">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-homesync-muted font-mono text-xs">$</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={customSplits[member.user_id] || ''}
+                            onChange={(e) =>
+                              setCustomSplits((prev) => ({
+                                ...prev,
+                                [member.user_id]: e.target.value,
+                              }))
+                            }
+                            className="pl-6 rounded-none border-2 border-homesync-sand focus-visible:border-homesync-ink focus-visible:ring-0 font-mono text-sm h-9"
+                          />
+                        </div>
                       </div>
                     ))}
                   </TabsContent>
@@ -550,16 +552,20 @@ export default function Expenses() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setAddModalOpen(false)}>
+            <div className="p-6 border-t-2 border-homesync-ink bg-homesync-tan flex justify-end gap-4">
+              <Button
+                variant="outline"
+                onClick={() => setAddModalOpen(false)}
+                className="rounded-none border-2 border-homesync-ink bg-transparent text-homesync-ink hover:bg-homesync-cream font-mono text-xs uppercase tracking-widest px-6"
+              >
                 Cancel
               </Button>
               <Button
                 onClick={handleAddExpense}
                 disabled={addExpense.isPending}
-                className="bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white border-0"
+                className="rounded-none border-2 border-homesync-ink bg-homesync-rust text-white hover:bg-homesync-bark font-mono text-xs uppercase tracking-widest px-6"
               >
-                {addExpense.isPending ? 'Adding...' : 'Add Expense'}
+                {addExpense.isPending ? 'Saving...' : 'Add Expense'}
               </Button>
             </div>
           </DialogContent>
