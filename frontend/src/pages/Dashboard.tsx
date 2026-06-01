@@ -213,7 +213,7 @@ export default function Dashboard() {
 
           {/* Card 3: Meals */}
           <motion.div variants={item}>
-            <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-homesync-tan text-homesync-ink shadow-none h-full transition-colors hover:bg-white">
+            <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-white text-homesync-ink shadow-none h-full transition-colors hover:bg-homesync-tan">
               <CardContent className="p-6 sm:p-8">
                 <div className="flex items-start justify-between mb-8">
                   <div className="w-12 h-12 border-2 border-homesync-ink flex items-center justify-center">
