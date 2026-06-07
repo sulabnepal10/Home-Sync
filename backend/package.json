@@ -4,12 +4,12 @@
   "description": "HomeSync Roommate Management Platform - Backend API",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev src/index.ts",
-    "build": "tsc && npm prune --production",
-    "start": "node dist/index.js",
-    "lint": "eslint . --ext .ts",
-    "typecheck": "tsc --noEmit"
-  },
+  "dev": "ts-node-dev src/index.ts",
+  "build": "tsc && npm prune --production",
+  "start": "node dist/index.js",
+  "lint": "eslint .",
+  "typecheck": "tsc --noEmit"
+},
   "dependencies": {
     "@supabase/supabase-js": "^2.58.0",
     "cors": "^2.8.5",
@@ -19,12 +19,16 @@
     "jwks-rsa": "^4.0.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^22.7.3",
+    "eslint": "^10.4.1",
+    "globals": "^17.6.0",
     "nodemon": "^3.1.7",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.60.1"
   }
 }
