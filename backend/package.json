@@ -5,8 +5,9 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev src/index.ts",
-    "build": "tsc",
+    "build": "tsc && npm prune --production",
     "start": "node dist/index.js",
+    "lint": "eslint . --ext .ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
