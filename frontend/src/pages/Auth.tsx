@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, Mail, Lock, User, Eye, EyeOff, ArrowLeft, Home } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 
 /* ─── Font injection (same as Landing) ─── */
 function useFonts() {
@@ -517,11 +518,12 @@ export default function Auth() {
           <div className="auth-left-bg-letter" aria-hidden>H</div>
 
           <div className="auth-left-top">
-            <div className="auth-logo">
-              <div className="auth-logo-mark"><Home size={16} color="#fff" /></div>
-              <span className="auth-logo-text">HomeSync</span>
-            </div>
-            <span className="auth-left-tag">Personal Project</span>
+            <Link to="/">
+              <div className="auth-logo">
+                <div className="auth-logo-mark"><Home size={16} color="#fff" /></div>
+                <span className="auth-logo-text">HomeSync</span>
+              </div>
+            </Link>
           </div>
 
           <div className="auth-left-mid">
@@ -745,10 +747,6 @@ export default function Auth() {
               </motion.form>
             )}
 
-            <p className="auth-legal">
-              By continuing, you agree to our{' '}
-              <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
-            </p>
           </motion.div>
         </div>
 

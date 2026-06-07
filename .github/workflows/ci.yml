@@ -1,0 +1,56 @@
+name: RoomSync CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # JOB 1: Quality Control (Linting & Types)
+  quality-control:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      # Backend Checks
+      - name: 📦 Install Backend Dependencies
+        run: cd backend && npm install
+
+      - name: 🔍 Check Backend Types
+        run: cd backend && npm run typecheck
+
+      - name: 🧹 Lint Backend
+        run: cd backend && npm run lint
+
+      # Frontend Checks
+      - name: 📦 Install Frontend Dependencies
+        run: cd frontend && npm install
+
+      - name: 🔍 Check Frontend Types
+        run: cd frontend && npm run typecheck
+
+      - name: 🧹 Lint Frontend
+        run: cd frontend && npm run lint
+
+  # JOB 2: Continuous Deployment
+  deploy:
+    runs-on: ubuntu-latest
+    # CRITICAL: This job waits for quality-control to pass. If it fails, deploy never runs.
+    needs: quality-control 
+    # Only run the deploy job if we are pushing to the main branch
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 🚀 Trigger Backend Deployment (Render)
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+
+      - name: 🚀 Trigger Frontend Deployment (Vercel)
+        run: curl -X POST ${{ secrets.VERCEL_DEPLOY_HOOK }}

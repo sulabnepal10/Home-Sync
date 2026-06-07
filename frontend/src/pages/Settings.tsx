@@ -272,51 +272,6 @@ export default function Settings() {
             </Card>
           </motion.div>
 
-          {/* Appearance Section */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none">
-              <CardHeader className="border-b-2 border-homesync-sand bg-homesync-tan pb-6">
-                <CardTitle className="font-display text-2xl font-bold text-homesync-ink flex items-center gap-3">
-                  <Palette className="w-6 h-6 text-homesync-ink" />
-                  Appearance
-                </CardTitle>
-                <CardDescription className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted mt-2">
-                  Customize the interface theme
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6 bg-white">
-                <div className="space-y-4">
-                  <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold block mb-4">Theme Settings</Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {themes.map((t) => {
-                      const Icon = t.icon;
-                      const isActive = theme === t.value;
-                      return (
-                        <motion.button
-                          key={t.value}
-                          whileHover={{ scale: 1.01 }}
-                          whileTap={{ scale: 0.99 }}
-                          onClick={() => setTheme(t.value)}
-                          className={cn(
-                            'flex flex-col items-center justify-center gap-3 p-6 border-2 transition-all rounded-none',
-                            isActive
-                              ? 'border-homesync-ink bg-homesync-ink text-white'
-                              : 'border-homesync-sand bg-white text-homesync-ink hover:border-homesync-ink hover:bg-homesync-cream'
-                          )}
-                        >
-                          <Icon className="w-6 h-6" />
-                          <span className="font-mono text-[10px] uppercase tracking-widest font-bold">
-                            {t.label}
-                          </span>
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
           {/* Notifications Section */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
             <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none">

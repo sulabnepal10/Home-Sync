@@ -75,10 +75,10 @@ const features = [
 ];
 
 const stats = [
-  { label: 'Happy Households', value: '50K+' },
-  { label: 'Expenses Tracked', value: '2M+' },
-  { label: 'Chores Completed', value: '500K+' },
-  { label: 'Meals Shared', value: '100K+' },
+  { label: 'Happy Households', value: '3+' },
+  { label: 'Expenses Tracked', value: '20+' },
+  { label: 'Chores Completed', value: '20+' },
+  { label: 'Meals Shared', value: '50+' },
 ];
 
 /* ─── GRAIN OVERLAY (CSS-only SVG) ─── */

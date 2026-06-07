@@ -96,23 +96,6 @@ export default function CommandPalette({ open, onOpenChange }: Props) {
         <CommandGroup heading="Preferences">
           <CommandItem
             onSelect={() => {
-              setTheme(theme === 'dark' ? 'light' : 'dark');
-            }}
-          >
-            {theme === 'dark' ? (
-              <>
-                <Sun className="w-4 h-4 mr-2" />
-                Light Mode
-              </>
-            ) : (
-              <>
-                <Moon className="w-4 h-4 mr-2" />
-                Dark Mode
-              </>
-            )}
-          </CommandItem>
-          <CommandItem
-            onSelect={() => {
               signOut();
               onOpenChange(false);
             }}
