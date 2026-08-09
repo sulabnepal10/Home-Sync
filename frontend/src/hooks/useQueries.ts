@@ -398,6 +398,7 @@ export function useCreateMeal() {
       notes?: string;
       attendees?: string[];
       meal_time?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+      poll_group_id?: string;
     }) => api.post<Meal>('/api/meals', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meals'] });
@@ -450,6 +451,18 @@ export function useLeaveMeal() {
 
   return useMutation({
     mutationFn: (id: string) => api.post<Meal>(`/api/meals/${id}/leave`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meals'] });
+    },
+  });
+}
+
+export function useVoteMeal() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.post<{ meal_id: string; vote_count: number; voted_by_me: boolean }>(`/api/meals/${id}/vote`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meals'] });
     },

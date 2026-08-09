@@ -9,7 +9,8 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Trash2
+  Trash2,
+  Vote
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,8 +39,10 @@ import {
   useCreateMeal,
   useJoinMeal,
   useLeaveMeal,
-  useDeleteMeal
+  useDeleteMeal,
+  useVoteMeal
 } from '@/hooks/useQueries';
+import type { Meal } from '@/types';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LoadingState, ErrorState } from '@/components/shared/QueryState';
 import { format, startOfWeek, addDays, isToday, isSameDay, parseISO } from 'date-fns';
@@ -78,6 +81,23 @@ const mealIdeas = [
   'Sushi Making',
 ];
 
+/**
+ * Groups a day's meals into standalone meals vs. poll groups (candidates
+ * sharing a poll_group_id), sorting each poll's options by vote count so
+ * the leading option renders first.
+ */
+function groupMealsForDay(dayMeals: Meal[]): { key: string; options: Meal[] }[] {
+  const groups = new Map<string, Meal[]>();
+  dayMeals.forEach((meal) => {
+    const key = meal.poll_group_id || meal.id;
+    groups.set(key, [...(groups.get(key) || []), meal]);
+  });
+  return Array.from(groups.entries()).map(([key, options]) => ({
+    key,
+    options: [...options].sort((a, b) => (b.vote_count ?? 0) - (a.vote_count ?? 0)),
+  }));
+}
+
 export default function Meals() {
   useFonts();
 
@@ -87,6 +107,7 @@ export default function Meals() {
   const joinMeal = useJoinMeal();
   const leaveMeal = useLeaveMeal();
   const deleteMeal = useDeleteMeal();
+  const voteMeal = useVoteMeal();
 
   const [selectedWeek, setSelectedWeek] = useState(new Date());
   const [addMealModalOpen, setAddMealModalOpen] = useState(false);
@@ -96,6 +117,15 @@ export default function Meals() {
   const [mealTime, setMealTime] = useState('dinner');
   const [notes, setNotes] = useState('');
   const [selectedAttendees, setSelectedAttendees] = useState<string[]>([]);
+  const [isPollMode, setIsPollMode] = useState(false);
+  const [pollOptions, setPollOptions] = useState(['', '', '']);
+  const [isSubmittingPoll, setIsSubmittingPoll] = useState(false);
+
+  const handleVote = (mealId: string) => {
+    voteMeal.mutate(mealId, {
+      onError: (error) => toast.error(error.message || 'Failed to vote'),
+    });
+  };
 
   const getInitials = (name: string) =>
     name?.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
@@ -262,27 +292,58 @@ export default function Meals() {
                       </div>
                       <div className="p-3 space-y-3">
                         {dayMeals.length > 0 ? (
-                          dayMeals.map((meal) => (
-                            <motion.div
-                              key={meal.id}
-                              whileHover={{ scale: 1.02 }}
-                              className="p-3 border-2 border-homesync-ink bg-white text-homesync-ink text-sm transition-all rounded-none"
-                            >
-                              <div className="flex items-center gap-2 text-homesync-muted mb-2">
-                                <ChefHat className="w-3 h-3 text-homesync-rust" />
-                                <span className="font-mono text-[9px] uppercase tracking-widest font-bold text-homesync-ink truncate">
-                                  {meal.chef?.full_name}
-                                </span>
+                          groupMealsForDay(dayMeals).map(({ key, options }) =>
+                            options.length > 1 ? (
+                              <div key={key} className="border-2 border-homesync-rust bg-white text-sm rounded-none">
+                                <div className="flex items-center gap-1 px-3 pt-2 text-[9px] font-mono uppercase tracking-widest text-homesync-rust">
+                                  <Vote className="w-3 h-3" />
+                                  Vote
+                                </div>
+                                <div className="p-2 space-y-1.5">
+                                  {options.map((meal, i) => (
+                                    <button
+                                      key={meal.id}
+                                      onClick={() => handleVote(meal.id)}
+                                      disabled={voteMeal.isPending}
+                                      className={cn(
+                                        "w-full flex items-center justify-between gap-2 p-2 border transition-colors text-left",
+                                        meal.voted_by_me
+                                          ? "border-homesync-olive bg-homesync-olive/10"
+                                          : "border-homesync-sand hover:bg-homesync-cream",
+                                        i === 0 && (meal.vote_count ?? 0) > 0 && "font-bold"
+                                      )}
+                                    >
+                                      <span className="truncate text-homesync-ink text-xs">{meal.meal_name}</span>
+                                      <span className="flex items-center gap-1 font-mono text-[9px] text-homesync-muted shrink-0">
+                                        {meal.voted_by_me && <Check className="w-3 h-3 text-homesync-olive" />}
+                                        {meal.vote_count ?? 0}
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
-                              <p className="font-bold font-body truncate leading-tight mb-2">
-                                {meal.meal_name}
-                              </p>
-                              <div className="flex items-center gap-1 mt-1 text-[9px] font-mono uppercase tracking-widest text-homesync-muted">
-                                <Users className="w-3 h-3 text-homesync-ink" />
-                                <span>{meal.attendees?.length || 0} In</span>
-                              </div>
-                            </motion.div>
-                          ))
+                            ) : (
+                              <motion.div
+                                key={key}
+                                whileHover={{ scale: 1.02 }}
+                                className="p-3 border-2 border-homesync-ink bg-white text-homesync-ink text-sm transition-all rounded-none"
+                              >
+                                <div className="flex items-center gap-2 text-homesync-muted mb-2">
+                                  <ChefHat className="w-3 h-3 text-homesync-rust" />
+                                  <span className="font-mono text-[9px] uppercase tracking-widest font-bold text-homesync-ink truncate">
+                                    {options[0].chef?.full_name}
+                                  </span>
+                                </div>
+                                <p className="font-bold font-body truncate leading-tight mb-2">
+                                  {options[0].meal_name}
+                                </p>
+                                <div className="flex items-center gap-1 mt-1 text-[9px] font-mono uppercase tracking-widest text-homesync-muted">
+                                  <Users className="w-3 h-3 text-homesync-ink" />
+                                  <span>{options[0].attendees?.length || 0} In</span>
+                                </div>
+                              </motion.div>
+                            )
+                          )
                         ) : (
                           <p className="font-mono text-[10px] uppercase tracking-widest text-center text-homesync-muted py-4">
                             No meals
@@ -478,29 +539,60 @@ export default function Meals() {
             </DialogHeader>
             <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
 
-              <div className="space-y-3">
-                <Label htmlFor="meal-name" className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Meal Name</Label>
-                <Input
-                  id="meal-name"
-                  placeholder="What's on the menu?"
-                  value={mealName}
-                  onChange={(e) => setMealName(e.target.value)}
-                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
-                />
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {mealIdeas.slice(0, 4).map((idea) => (
-                    <Button
-                      key={idea}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setMealName(idea)}
-                      className="rounded-none border-2 border-homesync-sand bg-white hover:bg-homesync-tan hover:border-homesync-ink text-homesync-ink font-mono text-[9px] uppercase tracking-widest h-8"
-                    >
-                      {idea}
-                    </Button>
+              <button
+                type="button"
+                onClick={() => setIsPollMode((v) => !v)}
+                className={cn(
+                  "w-full flex items-center justify-between p-3 border-2 font-mono text-[10px] uppercase tracking-widest transition-colors",
+                  isPollMode
+                    ? "border-homesync-rust bg-homesync-rust/10 text-homesync-rust"
+                    : "border-homesync-sand bg-white text-homesync-muted hover:border-homesync-ink"
+                )}
+              >
+                <span>Can't decide? Propose a few options to vote on</span>
+                <span className="font-bold">{isPollMode ? 'ON' : 'OFF'}</span>
+              </button>
+
+              {isPollMode ? (
+                <div className="space-y-3">
+                  <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Options to vote on</Label>
+                  {pollOptions.map((option, i) => (
+                    <Input
+                      key={i}
+                      placeholder={`Option ${i + 1}${i < 2 ? '' : ' (optional)'}`}
+                      value={option}
+                      onChange={(e) =>
+                        setPollOptions((prev) => prev.map((o, idx) => (idx === i ? e.target.value : o)))
+                      }
+                      className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
+                    />
                   ))}
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  <Label htmlFor="meal-name" className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Meal Name</Label>
+                  <Input
+                    id="meal-name"
+                    placeholder="What's on the menu?"
+                    value={mealName}
+                    onChange={(e) => setMealName(e.target.value)}
+                    className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
+                  />
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {mealIdeas.slice(0, 4).map((idea) => (
+                      <Button
+                        key={idea}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setMealName(idea)}
+                        className="rounded-none border-2 border-homesync-sand bg-white hover:bg-homesync-tan hover:border-homesync-ink text-homesync-ink font-mono text-[9px] uppercase tracking-widest h-8"
+                      >
+                        {idea}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-3">
@@ -582,14 +674,54 @@ export default function Meals() {
                 Cancel
               </Button>
               <Button
-                disabled={createMeal.isPending}
-                onClick={() => {
-                  if (!mealName) {
-                    toast.error('Please enter a meal name');
-                    return;
-                  }
+                disabled={createMeal.isPending || isSubmittingPoll}
+                onClick={async () => {
                   if (!household?.id) {
                     toast.error('Household ID is missing');
+                    return;
+                  }
+
+                  const resetShared = () => {
+                    setAddMealModalOpen(false);
+                    setNotes('');
+                    setSelectedAttendees([]);
+                    setMealTime('dinner');
+                  };
+
+                  if (isPollMode) {
+                    const options = pollOptions.map((o) => o.trim()).filter(Boolean);
+                    if (options.length < 2) {
+                      toast.error('Enter at least 2 options to vote on');
+                      return;
+                    }
+                    const pollGroupId = crypto.randomUUID();
+                    setIsSubmittingPoll(true);
+                    try {
+                      for (const option of options) {
+                        await createMeal.mutateAsync({
+                          household_id: household.id,
+                          date: mealDate,
+                          meal_name: option,
+                          notes,
+                          attendees: selectedAttendees,
+                          meal_time: mealTime as 'breakfast' | 'lunch' | 'dinner',
+                          poll_group_id: pollGroupId,
+                        });
+                      }
+                      toast.success('Poll created — cast your votes!');
+                      resetShared();
+                      setPollOptions(['', '', '']);
+                      setIsPollMode(false);
+                    } catch (error) {
+                      toast.error(error instanceof Error ? error.message : 'Failed to create poll');
+                    } finally {
+                      setIsSubmittingPoll(false);
+                    }
+                    return;
+                  }
+
+                  if (!mealName) {
+                    toast.error('Please enter a meal name');
                     return;
                   }
                   createMeal.mutate(
@@ -604,11 +736,8 @@ export default function Meals() {
                     {
                       onSuccess: () => {
                         toast.success('Meal planned!');
-                        setAddMealModalOpen(false);
+                        resetShared();
                         setMealName('');
-                        setNotes('');
-                        setSelectedAttendees([]);
-                        setMealTime('dinner');
                       },
                       onError: (error) => {
                         toast.error(error.message || 'Failed to plan meal');
@@ -618,7 +747,7 @@ export default function Meals() {
                 }}
                 className="rounded-none border-2 border-homesync-ink bg-homesync-rust text-white hover:bg-homesync-bark font-mono text-xs uppercase tracking-widest px-6"
               >
-                {createMeal.isPending ? 'Planning...' : 'Plan Meal'}
+                {createMeal.isPending || isSubmittingPoll ? 'Planning...' : isPollMode ? 'Create Poll' : 'Plan Meal'}
               </Button>
             </div>
           </DialogContent>

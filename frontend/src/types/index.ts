@@ -103,6 +103,9 @@ export interface Meal {
   notes: string;
   attendees: string[];
   meal_time: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  poll_group_id?: string | null;
+  vote_count?: number;
+  voted_by_me?: boolean;
   created_at: string;
   chef?: Profile;
 }
