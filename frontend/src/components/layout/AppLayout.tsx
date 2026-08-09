@@ -1,12 +1,9 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useFonts } from '@/hooks/useFonts';
+import { GrainOverlay } from '@/components/shared/GrainOverlay';
 import {
   Home,
-  Wallet,
-  ArrowLeftRight,
-  CheckSquare,
-  UtensilsCrossed,
-  Package,
   Settings,
   Menu,
   X,
@@ -31,31 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import CommandPalette from '@/components/shared/CommandPalette';
-
-/* ─── Fonts & Brand ─── */
-function useFonts() {
-  useEffect(() => {
-    if (document.getElementById('homesync-fonts')) return;
-    const link = document.createElement('link');
-    link.id = 'homesync-fonts';
-    link.rel = 'stylesheet';
-    link.href =
-      'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap';
-    document.head.appendChild(link);
-  }, []);
-}
-
-const grainSvg = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E")`;
-
-const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: Home },
-  { path: '/expenses', label: 'Expenses', icon: Wallet },
-  { path: '/loans', label: 'Loans', icon: ArrowLeftRight },
-  { path: '/chores', label: 'Chores', icon: CheckSquare },
-  { path: '/meals', label: 'Meals', icon: UtensilsCrossed },
-  { path: '/inventory', label: 'Inventory', icon: Package },
-  { path: '/settings', label: 'Settings', icon: Settings },
-];
+import { navItems } from '@/lib/navigation';
 
 interface AppLayoutProps {
   children?: React.ReactNode;
@@ -95,12 +68,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     <>
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
 
-      {/* Global Grain Overlay (Placed here to cover the entire app cleanly) */}
-      <div
-        className="fixed inset-0 pointer-events-none z-[999] opacity-40 mix-blend-overlay"
-        style={{ backgroundImage: grainSvg }}
-        aria-hidden="true"
-      />
+      <GrainOverlay />
 
       {/* Mobile header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-homesync-cream border-b-2 border-homesync-ink z-50 flex items-center justify-between px-4">

@@ -1,6 +1,7 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useFonts } from '@/hooks/useFonts';
 import {
   Home,
   Wallet,
@@ -13,18 +14,6 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 
-/* ─── Google Fonts injected once ─── */
-function useFonts() {
-  useEffect(() => {
-    if (document.getElementById('homesync-fonts')) return;
-    const link = document.createElement('link');
-    link.id = 'homesync-fonts';
-    link.rel = 'stylesheet';
-    link.href =
-      'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap';
-    document.head.appendChild(link);
-  }, []);
-}
 
 /* ─── DATA ─── */
 const features = [
