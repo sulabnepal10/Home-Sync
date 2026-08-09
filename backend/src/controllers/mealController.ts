@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getSupabaseAdmin } from '../config/database';
 import { asyncHandler, ApiError } from '../middleware/errorHandler';
+import { logActivity } from '../services/activityService';
 
 /**
  * Get all meals for the user's household
@@ -100,7 +101,7 @@ export const createMeal = asyncHandler(async (req: Request, res: Response): Prom
     throw ApiError.unauthorized();
   }
 
-  const { household_id, date, meal_name, notes, attendees } = req.body;
+  const { household_id, date, meal_name, notes, attendees, meal_time } = req.body;
 
   if (!household_id || !date || !meal_name) {
     throw ApiError.badRequest('Household ID, date, and meal name are required');
@@ -129,6 +130,7 @@ export const createMeal = asyncHandler(async (req: Request, res: Response): Prom
       meal_name,
       notes: notes || '',
       attendees: attendees || [],
+      meal_time: meal_time || 'dinner',
     })
     .select()
     .single();
@@ -136,6 +138,13 @@ export const createMeal = asyncHandler(async (req: Request, res: Response): Prom
   if (error) {
     throw ApiError.internal(`Failed to create meal: ${error.message}`);
   }
+
+  await logActivity(supabase, {
+    householdId: household_id,
+    userId: req.user.id,
+    actionType: 'meal_created',
+    description: `Planned "${meal_name}" for ${date}`,
+  });
 
   res.status(201).json({ success: true, data: meal });
 });
@@ -150,7 +159,7 @@ export const updateMeal = asyncHandler(async (req: Request, res: Response): Prom
   }
 
   const { id } = req.params;
-  const { meal_name, notes, date, attendees } = req.body;
+  const { meal_name, notes, date, attendees, meal_time } = req.body;
 
   const supabase = getSupabaseAdmin();
 
@@ -174,6 +183,7 @@ export const updateMeal = asyncHandler(async (req: Request, res: Response): Prom
   if (notes !== undefined) updateData.notes = notes;
   if (date) updateData.date = date;
   if (attendees !== undefined) updateData.attendees = attendees;
+  if (meal_time) updateData.meal_time = meal_time;
 
   const { data: updated, error } = await supabase
     .from('meals')
@@ -185,6 +195,13 @@ export const updateMeal = asyncHandler(async (req: Request, res: Response): Prom
   if (error) {
     throw ApiError.internal(`Failed to update meal: ${error.message}`);
   }
+
+  await logActivity(supabase, {
+    householdId: meal.household_id,
+    userId: req.user.id,
+    actionType: 'meal_updated',
+    description: `Updated meal "${updated.meal_name}"`,
+  });
 
   res.json({ success: true, data: updated });
 });
@@ -232,6 +249,13 @@ export const deleteMeal = asyncHandler(async (req: Request, res: Response): Prom
   if (error) {
     throw ApiError.internal(`Failed to delete meal: ${error.message}`);
   }
+
+  await logActivity(supabase, {
+    householdId: meal.household_id,
+    userId: req.user.id,
+    actionType: 'meal_deleted',
+    description: `Deleted meal "${meal.meal_name}"`,
+  });
 
   res.json({ success: true, message: 'Meal deleted successfully' });
 });
@@ -288,6 +312,13 @@ export const joinMeal = asyncHandler(async (req: Request, res: Response): Promis
     throw ApiError.internal(`Failed to join meal: ${error.message}`);
   }
 
+  await logActivity(supabase, {
+    householdId: meal.household_id,
+    userId: req.user.id,
+    actionType: 'meal_joined',
+    description: `Joined "${meal.meal_name}"`,
+  });
+
   res.json({ success: true, data: updated });
 });
 
@@ -329,6 +360,13 @@ export const leaveMeal = asyncHandler(async (req: Request, res: Response): Promi
   if (error) {
     throw ApiError.internal(`Failed to leave meal: ${error.message}`);
   }
+
+  await logActivity(supabase, {
+    householdId: meal.household_id,
+    userId: req.user.id,
+    actionType: 'meal_left',
+    description: `Opted out of "${meal.meal_name}"`,
+  });
 
   res.json({ success: true, data: updated });
 });

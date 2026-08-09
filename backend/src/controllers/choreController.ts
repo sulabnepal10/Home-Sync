@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { getSupabaseAdmin } from '../config/database';
 import { asyncHandler, ApiError } from '../middleware/errorHandler';
+import { logActivity } from '../services/activityService';
+import { checkMissedChoreAssignments, computeStreakOnCompletion } from '../services/choreService';
 
 /**
  * Get all chores for the user's household
@@ -24,6 +26,8 @@ export const getChores = asyncHandler(async (req: Request, res: Response): Promi
   if (!membership) {
     throw ApiError.notFound('User is not in a household');
   }
+
+  await checkMissedChoreAssignments(supabase, membership.household_id);
 
   let query = supabase
     .from('chores')
@@ -135,6 +139,13 @@ export const createChore = asyncHandler(async (req: Request, res: Response): Pro
   if (error) {
     throw ApiError.internal(`Failed to create chore: ${error.message}`);
   }
+
+  await logActivity(supabase, {
+    householdId: household_id,
+    userId: req.user.id,
+    actionType: 'chore_created',
+    description: `Created chore "${name}"`,
+  });
 
   res.status(201).json({ success: true, data: chore });
 });
@@ -269,6 +280,8 @@ export const getChoreAssignments = asyncHandler(
       throw ApiError.notFound('User is not in a household');
     }
 
+    await checkMissedChoreAssignments(supabase, membership.household_id);
+
     let query = supabase
       .from('chore_assignments')
       .select(
@@ -359,6 +372,13 @@ export const createChoreAssignment = asyncHandler(
       );
     }
 
+    await logActivity(supabase, {
+      householdId: chore.household_id,
+      userId: req.user.id,
+      actionType: 'chore_assignment_created',
+      description: `Assigned "${chore.name}" for ${assigned_date}`,
+    });
+
     res.status(201).json({ success: true, data: assignment });
   }
 );
@@ -396,11 +416,14 @@ export const completeChoreAssignment = asyncHandler(
       throw ApiError.badRequest('Chore already completed');
     }
 
+    const newStreak = await computeStreakOnCompletion(supabase, req.user.id, assignment.assigned_date);
+
     const { data: updated, error } = await supabase
       .from('chore_assignments')
       .update({
         completed_at: new Date().toISOString(),
         notes: notes || '',
+        streak_count: newStreak,
       })
       .eq('id', id)
       .select()
@@ -411,6 +434,14 @@ export const completeChoreAssignment = asyncHandler(
         `Failed to complete chore assignment: ${error.message}`
       );
     }
+
+    const choreName = (assignment.chore as { household_id: string; name: string }).name;
+    await logActivity(supabase, {
+      householdId: (assignment.chore as { household_id: string }).household_id,
+      userId: req.user.id,
+      actionType: 'chore_completed',
+      description: `Completed "${choreName}"${newStreak > 1 ? ` — ${newStreak} in a row` : ''}`,
+    });
 
     res.json({ success: true, data: updated });
   }
@@ -461,6 +492,13 @@ export const deleteChoreAssignment = asyncHandler(
         `Failed to delete chore assignment: ${error.message}`
       );
     }
+
+    await logActivity(supabase, {
+      householdId: (assignment.chore as { household_id: string }).household_id,
+      userId: req.user.id,
+      actionType: 'chore_assignment_deleted',
+      description: 'Removed a chore assignment',
+    });
 
     res.json({ success: true, message: 'Chore assignment deleted' });
   }

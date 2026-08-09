@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { getSupabaseAdmin } from '../config/database';
 import { asyncHandler, ApiError } from '../middleware/errorHandler';
+import { logActivity } from '../services/activityService';
+import { generateDueRecurringBills } from '../services/recurringBillService';
+import { validateSplitsSum } from '../utils/splitCalculator';
 
 /**
  * Get all expenses for the user's household
@@ -25,6 +28,8 @@ export const getExpenses = asyncHandler(async (req: Request, res: Response): Pro
   if (!membership) {
     throw ApiError.notFound('User is not in a household');
   }
+
+  await generateDueRecurringBills(supabase, membership.household_id);
 
   // Always scope to the caller's own household — never trust a client-supplied
   // household_id, or any authenticated user could read another household's expenses.
@@ -100,7 +105,7 @@ export const createExpense = asyncHandler(async (req: Request, res: Response): P
     throw ApiError.unauthorized();
   }
 
-  const { household_id, amount, description, category, split_type, splits } = req.body;
+  const { household_id, amount, description, category, split_type, splits, split_config } = req.body;
 
   if (!household_id || !amount || !description) {
     throw ApiError.badRequest('Household ID, amount, and description are required');
@@ -118,6 +123,35 @@ export const createExpense = asyncHandler(async (req: Request, res: Response): P
 
   if (!membership) {
     throw ApiError.forbidden('Access denied to this household');
+  }
+
+  // The client computes splits (for live preview), but the server is the
+  // authority: reject anything that doesn't add up rather than silently
+  // trusting client-side math. Every split_type still requires the split
+  // amounts themselves to sum to the total; 'percentage' additionally
+  // requires the percentages used to sum to 100.
+  if (splits && splits.length > 0) {
+    try {
+      validateSplitsSum(
+        splits.map((s: { user_id: string; amount: number }) => ({ user_id: s.user_id, amount: Number(s.amount) })),
+        Number(amount)
+      );
+    } catch (err) {
+      throw ApiError.badRequest(err instanceof Error ? err.message : 'Invalid splits');
+    }
+
+    if (split_type === 'percentage') {
+      if (!split_config) {
+        throw ApiError.badRequest('split_config (percentages per user) is required for a percentage split');
+      }
+      const sumPct = Object.values(split_config as Record<string, number>).reduce(
+        (sum, pct) => sum + Number(pct),
+        0
+      );
+      if (Math.abs(sumPct - 100) > 0.5) {
+        throw ApiError.badRequest(`Percentages must sum to 100 (got ${sumPct})`);
+      }
+    }
   }
 
   // Create the expense
@@ -154,6 +188,13 @@ export const createExpense = asyncHandler(async (req: Request, res: Response): P
       throw ApiError.internal(`Failed to create expense splits: ${splitsError.message}`);
     }
   }
+
+  await logActivity(supabase, {
+    householdId: household_id,
+    userId: req.user.id,
+    actionType: 'expense_created',
+    description: `Added expense "${description}" for $${Number(amount).toFixed(2)}`,
+  });
 
   res.status(201).json({ success: true, data: expense });
 });
@@ -204,6 +245,13 @@ export const updateExpense = asyncHandler(async (req: Request, res: Response): P
     throw ApiError.internal(`Failed to update expense: ${error.message}`);
   }
 
+  await logActivity(supabase, {
+    householdId: expense.household_id,
+    userId: req.user.id,
+    actionType: 'expense_updated',
+    description: `Updated expense "${updated.description}"`,
+  });
+
   res.json({ success: true, data: updated });
 });
 
@@ -252,6 +300,13 @@ export const deleteExpense = asyncHandler(async (req: Request, res: Response): P
     throw ApiError.internal(`Failed to delete expense: ${error.message}`);
   }
 
+  await logActivity(supabase, {
+    householdId: expense.household_id,
+    userId: req.user.id,
+    actionType: 'expense_deleted',
+    description: `Deleted expense "${expense.description}"`,
+  });
+
   res.json({ success: true, message: 'Expense deleted successfully' });
 });
 
@@ -296,6 +351,13 @@ export const settleSplit = asyncHandler(async (req: Request, res: Response): Pro
   if (error) {
     throw ApiError.internal(`Failed to settle split: ${error.message}`);
   }
+
+  await logActivity(supabase, {
+    householdId: (split.expense as { household_id: string }).household_id,
+    userId: req.user.id,
+    actionType: 'expense_split_settled',
+    description: `Settled a $${Number(updated.amount).toFixed(2)} expense split`,
+  });
 
   res.json({ success: true, data: updated });
 });

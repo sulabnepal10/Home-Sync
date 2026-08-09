@@ -14,6 +14,7 @@ import choreRoutes, { choreAssignmentRouter } from './routes/choreRoutes';
 import mealRoutes from './routes/mealRoutes';
 import inventoryRoutes from './routes/inventoryRoutes';
 import activityRoutes from './routes/activityRoutes'
+import recurringBillRoutes from './routes/recurringBillRoutes';
 
 // Initialize Express app
 const app = express();
@@ -90,6 +91,8 @@ app.get('/api', (_req, res) => {
       chores: '/api/chores',
       meals: '/api/meals',
       inventory: '/api/inventory',
+      recurringBills: '/api/recurring-bills',
+      activity: '/api/activity',
     },
     documentation: 'https://github.com/homesync/docs',
   });
@@ -123,6 +126,9 @@ app.use('/api/inventory', inventoryRoutes);
 
 // Dashboard Activity
 app.use('/api/activity', activityRoutes);
+
+// Recurring bills
+app.use('/api/recurring-bills', recurringBillRoutes);
 
 // ============ Error Handling ============
 
