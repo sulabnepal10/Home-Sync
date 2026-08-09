@@ -13,6 +13,7 @@ import type {
   Household,
   HouseholdMember,
   NotificationPreferences,
+  RecurringBill,
 } from '@/types';
 
 // ============ Profile API ============
@@ -542,7 +543,62 @@ export function useDeleteInventoryItem() {
   });
 }
 
-// ============ Activity Log API (placeholder - would need backend implementation) ============
+// ============ Recurring Bills API ============
+
+export function useRecurringBills() {
+  const { household } = useAuthStore();
+
+  return useQuery({
+    queryKey: ['recurring-bills', household?.id],
+    queryFn: () => api.get<RecurringBill[]>('/api/recurring-bills'),
+    enabled: !!household?.id,
+  });
+}
+
+export function useCreateRecurringBill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      household_id: string;
+      description: string;
+      amount: number;
+      category?: string;
+      split_type?: 'equal' | 'custom' | 'percentage';
+      frequency?: 'weekly' | 'monthly';
+      next_due_date: string;
+    }) => api.post<RecurringBill>('/api/recurring-bills', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurring-bills'] });
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    },
+  });
+}
+
+export function useUpdateRecurringBill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { id: string; is_active?: boolean; description?: string; amount?: number }) =>
+      api.put<RecurringBill>(`/api/recurring-bills/${data.id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurring-bills'] });
+    },
+  });
+}
+
+export function useDeleteRecurringBill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/recurring-bills/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurring-bills'] });
+    },
+  });
+}
+
+// ============ Activity Log API ============
 
 export function useActivityLog() {
   const { household } = useAuthStore();

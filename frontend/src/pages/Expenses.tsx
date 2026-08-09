@@ -57,6 +57,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { computeSplits } from '@/lib/splitCalculator';
+import { RecurringBillsPanel } from '@/components/shared/RecurringBillsPanel';
 
 /* ─── Fonts & Brand ─── */
 function useFonts() {
@@ -461,6 +462,10 @@ export default function Expenses() {
             </CardContent>
           </Card>
         </motion.div>
+
+        <div className="mt-12">
+          <RecurringBillsPanel />
+        </div>
 
         {/* Add Expense Modal */}
         <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>

@@ -130,4 +130,22 @@ export interface ActivityLog {
   profile?: Profile;
 }
 
+export interface RecurringBill {
+  id: string;
+  household_id: string;
+  payer_id: string;
+  description: string;
+  amount: number;
+  category: string;
+  split_type: 'equal' | 'custom' | 'percentage';
+  split_config: Record<string, number> | null;
+  frequency: 'weekly' | 'monthly';
+  day_of_month: number | null;
+  next_due_date: string;
+  is_active: boolean;
+  last_generated_expense_id: string | null;
+  created_at: string;
+  payer?: Profile;
+}
+
 export type Theme = 'light' | 'dark' | 'system';
