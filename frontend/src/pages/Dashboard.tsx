@@ -179,11 +179,11 @@ export default function Dashboard() {
                     This Month
                   </Badge>
                 </div>
-                <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Total Spent</p>
+                <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">Total Spent</p>
                 <p className="font-display text-4xl font-bold mb-4">
                   ${expenseSummary?.totalSpent.toFixed(2) || '0.00'}
                 </p>
-                <div className="flex items-center gap-2 font-mono text-[11px] tracking-wider text-white/80 border-t border-white/20 pt-4">
+                <div className="flex items-center gap-2 font-mono text-[11px] tracking-wider text-white border-t border-white/20 pt-4">
                   <TrendingUp className="w-4 h-4" />
                   <span>${expenseSummary?.totalOwed.toFixed(2) || '0.00'} to settle</span>
                 </div>
@@ -203,11 +203,11 @@ export default function Dashboard() {
                     Today
                   </Badge>
                 </div>
-                <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Chores Done</p>
+                <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">Chores Done</p>
                 <p className="font-display text-4xl font-bold mb-4">
-                  {todayChores.length - incompleteChores.length} <span className="text-2xl text-white/50">/ {todayChores.length}</span>
+                  {todayChores.length - incompleteChores.length} <span className="text-2xl text-white">/ {todayChores.length}</span>
                 </p>
-                <p className="font-mono text-[11px] tracking-wider text-white/80 border-t border-white/20 pt-4">
+                <p className="font-mono text-[11px] tracking-wider text-white border-t border-white/20 pt-4">
                   {incompleteChores.length} remaining
                 </p>
               </CardContent>
@@ -249,9 +249,9 @@ export default function Dashboard() {
                     Alert
                   </Badge>
                 </div>
-                <p className="font-mono text-xs tracking-widest uppercase text-white/50 mb-2">Low Stock</p>
+                <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">Low Stock</p>
                 <p className="font-display text-4xl font-bold mb-4">{lowStockItems?.length || 0}</p>
-                <p className="font-mono text-[11px] tracking-wider text-white/50 border-t border-white/10 pt-4">
+                <p className="font-mono text-[11px] tracking-wider text-white border-t border-white/10 pt-4">
                   Items need restocking
                 </p>
               </CardContent>
@@ -494,7 +494,7 @@ export default function Dashboard() {
                             <span className="font-bold font-display">{activity.profile?.full_name}</span>{' '}
                             <span className="text-homesync-muted">{activity.description}</span>
                           </p>
-                          <p className="font-mono text-[10px] uppercase tracking-widest text-homesync-sand mt-2">
+                          <p className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted mt-2">
                             {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
                           </p>
                         </div>

@@ -130,7 +130,7 @@ export default function Loans() {
               <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
                 <ArrowUpRight className="w-6 h-6" />
               </div>
-              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">You're Owed</p>
+              <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">You're Owed</p>
               <p className="font-display text-4xl font-bold">
                 ${totalLent.toFixed(2)}
               </p>
@@ -143,7 +143,7 @@ export default function Loans() {
               <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
                 <ArrowDownRight className="w-6 h-6" />
               </div>
-              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">You Owe</p>
+              <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">You Owe</p>
               <p className="font-display text-4xl font-bold">
                 ${totalOwed.toFixed(2)}
               </p>
@@ -159,7 +159,7 @@ export default function Loans() {
               <div className="w-12 h-12 border-2 border-white/20 flex items-center justify-center mb-8">
                 <TrendingUp className="w-6 h-6" />
               </div>
-              <p className="font-mono text-xs tracking-widest uppercase text-white/50 mb-2">Net Balance</p>
+              <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">Net Balance</p>
               <p className="font-display text-4xl font-bold">
                 {netBalance >= 0 ? '+' : ''}${netBalance.toFixed(2)}
               </p>

@@ -141,7 +141,7 @@ export default function Inventory() {
               <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
                 <Package className="w-6 h-6" />
               </div>
-              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Total Items</p>
+              <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">Total Items</p>
               <p className="font-display text-4xl font-bold">{totalItems}</p>
             </CardContent>
           </Card>
@@ -152,7 +152,7 @@ export default function Inventory() {
               <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
                 <AlertTriangle className="w-6 h-6" />
               </div>
-              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Low Stock</p>
+              <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">Low Stock</p>
               <p className="font-display text-4xl font-bold">{lowStockCount}</p>
             </CardContent>
           </Card>
@@ -163,7 +163,7 @@ export default function Inventory() {
               <div className="w-12 h-12 border-2 border-white/20 flex items-center justify-center mb-8">
                 <ShoppingCart className="w-6 h-6" />
               </div>
-              <p className="font-mono text-xs tracking-widest uppercase text-white/50 mb-2">Groceries</p>
+              <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">Groceries</p>
               <p className="font-display text-4xl font-bold">{groceryItems}</p>
             </CardContent>
           </Card>
@@ -323,7 +323,7 @@ export default function Inventory() {
                           </div>
 
                           <div className="flex items-center justify-between mt-auto">
-                            <p className="font-mono text-[9px] uppercase tracking-widest text-homesync-sand">
+                            <p className="font-mono text-[9px] uppercase tracking-widest text-homesync-muted">
                               {item.last_purchased ? (
                                 <>
                                   Purchased{' '}

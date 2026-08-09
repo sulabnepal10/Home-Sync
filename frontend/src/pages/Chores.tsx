@@ -136,8 +136,8 @@ export default function Chores() {
               <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
                 <Flame className="w-6 h-6" />
               </div>
-              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Current Streak</p>
-              <p className="font-display text-4xl font-bold">{currentStreak} <span className="text-2xl text-white/50">days</span></p>
+              <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">Current Streak</p>
+              <p className="font-display text-4xl font-bold">{currentStreak} <span className="text-2xl text-white">days</span></p>
             </CardContent>
           </Card>
 
@@ -147,7 +147,7 @@ export default function Chores() {
               <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
                 <Trophy className="w-6 h-6" />
               </div>
-              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Completion Rate</p>
+              <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">Completion Rate</p>
               <p className="font-display text-4xl font-bold">{completionRate.toFixed(0)}%</p>
             </CardContent>
           </Card>
@@ -158,8 +158,8 @@ export default function Chores() {
               <div className="w-12 h-12 border-2 border-white/20 flex items-center justify-center mb-8">
                 <CheckSquare className="w-6 h-6" />
               </div>
-              <p className="font-mono text-xs tracking-widest uppercase text-white/50 mb-2">This Week</p>
-              <p className="font-display text-4xl font-bold">{completedAssignments} <span className="text-2xl text-white/50">/ {totalAssignments}</span></p>
+              <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">This Week</p>
+              <p className="font-display text-4xl font-bold">{completedAssignments} <span className="text-2xl text-white">/ {totalAssignments}</span></p>
             </CardContent>
           </Card>
         </motion.div>
@@ -224,7 +224,7 @@ export default function Chores() {
                           isCurrentDay ? 'bg-homesync-rust text-white border-homesync-rust' : 'text-homesync-ink bg-homesync-tan'
                         )}
                       >
-                        <p className={cn("font-mono text-[10px] uppercase tracking-widest mb-1", isCurrentDay ? 'text-white/80' : 'text-homesync-muted')}>
+                        <p className={cn("font-mono text-[10px] uppercase tracking-widest mb-1", isCurrentDay ? 'text-white' : 'text-homesync-muted')}>
                           {format(day, 'EEE')}
                         </p>
                         <p className="font-display text-2xl font-bold">

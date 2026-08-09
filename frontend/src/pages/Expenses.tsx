@@ -230,7 +230,7 @@ export default function Expenses() {
               <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
                 <Wallet className="w-6 h-6" />
               </div>
-              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Total Spent</p>
+              <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">Total Spent</p>
               <p className="font-display text-4xl font-bold">
                 ${expenseSummary?.totalSpent.toFixed(2) || '0.00'}
               </p>
@@ -243,7 +243,7 @@ export default function Expenses() {
               <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
                 <ArrowUpRight className="w-6 h-6" />
               </div>
-              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">You're Owed</p>
+              <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">You're Owed</p>
               <p className="font-display text-4xl font-bold">
                 ${Math.max(expenseSummary?.netBalance || 0, 0).toFixed(2)}
               </p>
@@ -256,7 +256,7 @@ export default function Expenses() {
               <div className="w-12 h-12 border-2 border-white/20 flex items-center justify-center mb-8">
                 <ArrowDownRight className="w-6 h-6" />
               </div>
-              <p className="font-mono text-xs tracking-widest uppercase text-white/50 mb-2">You Owe</p>
+              <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">You Owe</p>
               <p className="font-display text-4xl font-bold">
                 ${Math.max(-(expenseSummary?.netBalance || 0), 0).toFixed(2)}
               </p>
@@ -389,7 +389,7 @@ export default function Expenses() {
                           <Badge className="rounded-none bg-transparent border border-homesync-sand text-homesync-muted font-mono text-[10px] uppercase tracking-widest hover:bg-transparent">
                             {expense.category}
                           </Badge>
-                          <span className="font-mono text-[10px] uppercase tracking-widest text-homesync-sand">
+                          <span className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted">
                             {formatDistanceToNow(new Date(expense.created_at), { addSuffix: true })}
                           </span>
                         </div>

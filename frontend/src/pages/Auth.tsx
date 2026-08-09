@@ -351,7 +351,7 @@ const css = `
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    color: var(--sand);
+    color: var(--muted);
     pointer-events: none;
     display: flex;
     align-items: center;
@@ -370,7 +370,7 @@ const css = `
     -webkit-appearance: none;
     border-radius: 0;
   }
-  .auth-input::placeholder { color: var(--sand); }
+  .auth-input::placeholder { color: var(--muted); }
   .auth-input:focus {
     border-color: var(--ink);
     background: var(--cream);
@@ -384,13 +384,13 @@ const css = `
     background: none;
     border: none;
     cursor: pointer;
-    color: var(--sand);
+    color: var(--muted);
     padding: 0;
     display: flex;
     align-items: center;
     transition: color 0.2s;
   }
-  .auth-toggle-btn:hover { color: var(--muted); }
+  .auth-toggle-btn:hover { color: var(--ink); }
 
   /* submit */
   .auth-submit {
@@ -425,7 +425,7 @@ const css = `
   /* bottom note */
   .auth-legal {
     font-size: 0.75rem;
-    color: var(--sand);
+    color: var(--muted);
     text-align: center;
     margin-top: 1.75rem;
     line-height: 1.6;

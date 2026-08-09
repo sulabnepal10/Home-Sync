@@ -442,7 +442,7 @@ const css = `
   .hs-feature-tag {
     font-family: var(--ff-mono);
     font-size: 11px;
-    color: var(--sand);
+    color: var(--muted);
     letter-spacing: 0.12em;
     position: absolute;
     top: 1.5rem;
