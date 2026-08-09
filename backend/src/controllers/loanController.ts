@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { getSupabaseAdmin } from '../config/database';
 import { asyncHandler, ApiError } from '../middleware/errorHandler';
+import { logActivity } from '../services/activityService';
+import { computeHouseholdBalances, simplifyDebts } from '../services/balanceService';
 
 /**
  * Get all loans for the user's household
@@ -153,6 +155,13 @@ export const createLoan = asyncHandler(async (req: Request, res: Response): Prom
     throw ApiError.internal(`Failed to create loan: ${error.message}`);
   }
 
+  await logActivity(supabase, {
+    householdId: household_id,
+    userId: req.user.id,
+    actionType: 'loan_created',
+    description: `Recorded a $${Number(amount).toFixed(2)} loan: "${description}"`,
+  });
+
   res.status(201).json({ success: true, data: loan });
 });
 
@@ -204,6 +213,13 @@ export const updateLoan = asyncHandler(async (req: Request, res: Response): Prom
     throw ApiError.internal(`Failed to update loan: ${error.message}`);
   }
 
+  await logActivity(supabase, {
+    householdId: loan.household_id,
+    userId: req.user.id,
+    actionType: 'loan_updated',
+    description: `Updated loan "${updated.description}"`,
+  });
+
   res.json({ success: true, data: updated });
 });
 
@@ -248,6 +264,13 @@ export const settleLoan = asyncHandler(async (req: Request, res: Response): Prom
     throw ApiError.internal(`Failed to settle loan: ${error.message}`);
   }
 
+  await logActivity(supabase, {
+    householdId: loan.household_id,
+    userId: req.user.id,
+    actionType: 'loan_settled',
+    description: `Settled a $${Number(loan.amount).toFixed(2)} loan: "${loan.description}"`,
+  });
+
   res.json({ success: true, data: updated });
 });
 
@@ -284,6 +307,13 @@ export const deleteLoan = asyncHandler(async (req: Request, res: Response): Prom
     throw ApiError.internal(`Failed to delete loan: ${error.message}`);
   }
 
+  await logActivity(supabase, {
+    householdId: loan.household_id,
+    userId: req.user.id,
+    actionType: 'loan_deleted',
+    description: `Deleted loan "${loan.description}"`,
+  });
+
   res.json({ success: true, message: 'Loan deleted successfully' });
 });
 
@@ -309,40 +339,15 @@ export const getLoanBalances = asyncHandler(async (req: Request, res: Response):
     throw ApiError.notFound('User is not in a household');
   }
 
-  // Get all unresolved loans
-  const { data: loans, error } = await supabase
-    .from('loans')
-    .select('*')
-    .eq('household_id', membership.household_id)
-    .eq('is_settled', false);
+  // Merges loans AND expense splits into one graph, then reduces it to the
+  // minimal set of suggested payments — previously this only ever looked at
+  // the `loans` table, so a debt chain spanning an expense split and a loan
+  // (the exact scenario the README uses as its headline example) never got
+  // simplified together.
+  const balances = await computeHouseholdBalances(supabase, membership.household_id);
+  const settlements = simplifyDebts(balances);
 
-  if (error) {
-    throw ApiError.internal(`Failed to fetch loans: ${error.message}`);
-  }
-
-  // Calculate balances
-  const balances: Record<
-    string,
-    { owed: number; lent: number; net: number }
-  > = {};
-
-  (loans || []).forEach((loan) => {
-    if (!balances[loan.borrower_id]) {
-      balances[loan.borrower_id] = { owed: 0, lent: 0, net: 0 };
-    }
-    if (!balances[loan.lender_id]) {
-      balances[loan.lender_id] = { owed: 0, lent: 0, net: 0 };
-    }
-
-    balances[loan.borrower_id].owed += Number(loan.amount);
-    balances[loan.lender_id].lent += Number(loan.amount);
-  });
-
-  Object.keys(balances).forEach((userId) => {
-    balances[userId].net = balances[userId].lent - balances[userId].owed;
-  });
-
-  res.json({ success: true, data: balances });
+  res.json({ success: true, data: { balances, settlements } });
 });
 
 export default {

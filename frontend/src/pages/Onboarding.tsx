@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Home, Users, ChevronRight, ChevronLeft, Loader2, Check } from 'lucide-react';
@@ -8,22 +8,11 @@ import { Label } from '@/components/ui/label';
 import { useCreateHousehold, useJoinHousehold } from '@/hooks/useQueries';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
+import { useFonts } from '@/hooks/useFonts';
+import { GrainOverlay } from '@/components/shared/GrainOverlay';
 
-/* ─── Google Fonts injected once ─── */
-function useFonts() {
-  useEffect(() => {
-    if (document.getElementById('homesync-fonts')) return;
-    const link = document.createElement('link');
-    link.id = 'homesync-fonts';
-    link.rel = 'stylesheet';
-    link.href =
-      'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap';
-    document.head.appendChild(link);
-  }, []);
-}
 
 /* ─── GRAIN OVERLAY ─── */
-const grainSvg = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E")`;
 
 const steps = [
   { id: 'welcome', title: 'Welcome to HomeSync' },
@@ -50,7 +39,7 @@ export default function Onboarding() {
     }
     try {
       const household = await createHousehold.mutateAsync({ name: householdName });
-      useAuthStore.setState({ household });
+      useAuthStore.getState().setHousehold(household);
       setCurrentStep(2);
     } catch {
       toast.error('Failed to create household');
@@ -64,7 +53,7 @@ export default function Onboarding() {
     }
     try {
       const household = await joinHousehold.mutateAsync(inviteCode);
-      useAuthStore.setState({ household });
+      useAuthStore.getState().setHousehold(household);
       setCurrentStep(2);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to join household');
@@ -279,12 +268,7 @@ export default function Onboarding() {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center bg-homesync-cream font-body text-homesync-ink p-4 overflow-hidden">
-      {/* Global Grain Overlay */}
-      <div
-        className="fixed inset-0 pointer-events-none z-[999] opacity-40 mix-blend-overlay"
-        style={{ backgroundImage: grainSvg }}
-        aria-hidden="true"
-      />
+      <GrainOverlay />
 
       {/* Progress indicator */}
       <div className="absolute top-10 left-1/2 -translate-x-1/2 flex items-center gap-3 z-10">

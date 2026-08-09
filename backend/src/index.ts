@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import config from './config';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { globalLimiter } from './middleware/rateLimiter';
 
 // Import routes
 import profileRoutes from './routes/profileRoutes';
@@ -12,11 +14,19 @@ import choreRoutes, { choreAssignmentRouter } from './routes/choreRoutes';
 import mealRoutes from './routes/mealRoutes';
 import inventoryRoutes from './routes/inventoryRoutes';
 import activityRoutes from './routes/activityRoutes'
+import recurringBillRoutes from './routes/recurringBillRoutes';
 
 // Initialize Express app
 const app = express();
 
 // ============ Middleware ============
+
+// Security headers
+app.use(helmet());
+
+// Global rate limit (applied before body parsing so oversized/abusive
+// request floods are rejected as cheaply as possible)
+app.use(globalLimiter);
 
 // CORS configuration
 const allowedOrigins = [
@@ -81,6 +91,8 @@ app.get('/api', (_req, res) => {
       chores: '/api/chores',
       meals: '/api/meals',
       inventory: '/api/inventory',
+      recurringBills: '/api/recurring-bills',
+      activity: '/api/activity',
     },
     documentation: 'https://github.com/homesync/docs',
   });
@@ -115,6 +127,9 @@ app.use('/api/inventory', inventoryRoutes);
 // Dashboard Activity
 app.use('/api/activity', activityRoutes);
 
+// Recurring bills
+app.use('/api/recurring-bills', recurringBillRoutes);
+
 // ============ Error Handling ============
 
 // 404 handler (must be after all routes)
@@ -138,13 +153,8 @@ app.listen(PORT, () => {
   console.log(`  API Info: http://localhost:${PORT}/api`);
   console.log('='.repeat(50));
   console.log('');
-
-  // Warn if environment variables are missing
-  if (!config.supabase.url || !config.supabase.jwtSecret) {
-    console.warn('WARNING: Missing required environment variables!');
-    console.warn('Please check your .env file configuration.');
-    console.warn('');
-  }
+  // Required env vars are validated (and, if missing, fatal) in ./config on import,
+  // so by the time we reach here the server is guaranteed to have them.
 });
 
 // Handle unhandled rejections

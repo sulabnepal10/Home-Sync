@@ -1,8 +1,18 @@
+export interface NotificationPreferences {
+  expenses: boolean;
+  chores: boolean;
+  meals: boolean;
+  inventory: boolean;
+  push: boolean;
+  email: boolean;
+}
+
 export interface Profile {
   id: string;
   full_name: string;
   avatar_url: string;
   created_at: string;
+  notification_preferences?: NotificationPreferences;
 }
 
 export interface Household {
@@ -78,6 +88,8 @@ export interface ChoreAssignment {
   completed_at: string | null;
   streak_count: number;
   notes: string;
+  is_penalty?: boolean;
+  missed_penalty_applied?: boolean;
   chore?: Chore;
   profile?: Profile;
 }
@@ -90,6 +102,10 @@ export interface Meal {
   meal_name: string;
   notes: string;
   attendees: string[];
+  meal_time: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  poll_group_id?: string | null;
+  vote_count?: number;
+  voted_by_me?: boolean;
   created_at: string;
   chef?: Profile;
 }
@@ -115,6 +131,24 @@ export interface ActivityLog {
   metadata: Record<string, unknown>;
   created_at: string;
   profile?: Profile;
+}
+
+export interface RecurringBill {
+  id: string;
+  household_id: string;
+  payer_id: string;
+  description: string;
+  amount: number;
+  category: string;
+  split_type: 'equal' | 'custom' | 'percentage';
+  split_config: Record<string, number> | null;
+  frequency: 'weekly' | 'monthly';
+  day_of_month: number | null;
+  next_due_date: string;
+  is_active: boolean;
+  last_generated_expense_id: string | null;
+  created_at: string;
+  payer?: Profile;
 }
 
 export type Theme = 'light' | 'dark' | 'system';

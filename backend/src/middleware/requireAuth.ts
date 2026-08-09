@@ -84,11 +84,14 @@ export function requireAuth(
     return;
   }
 
-  // 3. Verify using the getKey callback instead of a hardcoded secret string
+  // 3. Verify using the getKey callback instead of a hardcoded secret string.
+  // Only asymmetric algorithms are accepted: getKey always resolves a JWKS
+  // *public* key, so allowing HS256 here would let an attacker sign a forged
+  // token with that public key as an HMAC secret (algorithm-confusion bypass).
   jwt.verify(
     token,
     getKey,
-    { algorithms: ['ES256', 'RS256', 'HS256'] },
+    { algorithms: ['RS256', 'ES256'] },
     (err, decoded) => {
       if (err) {
         if (err instanceof jwt.TokenExpiredError) {
@@ -111,50 +114,6 @@ export function requireAuth(
         role: decodedToken.role,
       };
 
-      next();
-    }
-  );
-}
-
-/**
- * Optional auth middleware - attaches user if token is present but doesn't require it
- */
-export function optionalAuth(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader) {
-    return next();
-  }
-
-  const parts = authHeader.split(' ');
-  if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
-    return next();
-  }
-
-  const token = parts[1];
-  if (!token) {
-    return next();
-  }
-
-  jwt.verify(
-    token,
-    getKey,
-    { algorithms: ['ES256', 'RS256', 'HS256'] },
-    (err, decoded) => {
-      if (!err && decoded) {
-        const decodedToken = decoded as DecodedToken;
-        if (decodedToken.aud === 'authenticated') {
-          req.user = {
-            id: decodedToken.sub,
-            email: decodedToken.email,
-            role: decodedToken.role,
-          };
-        }
-      }
       next();
     }
   );

@@ -12,6 +12,8 @@ export interface AuthState {
   isAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   fetchProfile: () => Promise<void>;
   setHousehold: (household: Household | null) => void;
@@ -40,6 +42,23 @@ export const useAuthStore = create<AuthState>()(
       updateUser: (updates) => set((state) => ({
         user: state.user ? { ...state.user, ...updates } : null
       })),
+
+      signInWithGoogle: async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback`,
+          },
+        });
+        if (error) throw error;
+      },
+
+      requestPasswordReset: async (email: string) => {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+      },
 
       signUp: async (email: string, password: string, fullName: string) => {
         const { error } = await supabase.auth.signUp({
@@ -88,7 +107,7 @@ export const useAuthStore = create<AuthState>()(
                 members: householdData.members || [],
               });
             }
-          } catch (apiError) {
+          } catch {
             // If API call fails (e.g., no household yet), still set user as authenticated
             // Create a basic profile from auth metadata as fallback
             const fallbackProfile: Profile = {

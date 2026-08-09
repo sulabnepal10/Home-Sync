@@ -38,15 +38,20 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response): P
     throw ApiError.unauthorized();
   }
 
-  const { full_name, avatar_url } = req.body;
+  const { full_name, avatar_url, notification_preferences } = req.body;
 
-  if (!full_name && !avatar_url) {
+  if (!full_name && !avatar_url && !notification_preferences) {
     throw ApiError.badRequest('No update fields provided');
   }
 
-  const updateData: { full_name?: string; avatar_url?: string } = {};
+  const updateData: {
+    full_name?: string;
+    avatar_url?: string;
+    notification_preferences?: Record<string, boolean>;
+  } = {};
   if (full_name) updateData.full_name = full_name;
   if (avatar_url) updateData.avatar_url = avatar_url;
+  if (notification_preferences) updateData.notification_preferences = notification_preferences;
 
   const supabase = getSupabaseAdmin();
   const { data: profile, error } = await supabase

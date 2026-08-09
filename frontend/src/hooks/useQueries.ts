@@ -12,6 +12,8 @@ import type {
   Profile,
   Household,
   HouseholdMember,
+  NotificationPreferences,
+  RecurringBill,
 } from '@/types';
 
 // ============ Profile API ============
@@ -30,8 +32,11 @@ export function useUpdateProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { full_name?: string; avatar_url?: string }) =>
-      api.put<Profile>('/api/profile', data),
+    mutationFn: (data: {
+      full_name?: string;
+      avatar_url?: string;
+      notification_preferences?: NotificationPreferences;
+    }) => api.put<Profile>('/api/profile', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
@@ -84,6 +89,18 @@ export function useLeaveHousehold() {
 
   return useMutation({
     mutationFn: () => api.post('/api/household/leave'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['household'] });
+    },
+  });
+}
+
+export function useRemoveMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ householdId, memberId }: { householdId: string; memberId: string }) =>
+      api.delete(`/api/household/${householdId}/members/${memberId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['household'] });
     },
@@ -163,6 +180,7 @@ export function useAddExpense() {
       category: string;
       split_type: 'equal' | 'custom' | 'percentage';
       splits: { user_id: string; amount: number }[];
+      split_config?: Record<string, number>;
     }) => api.post<Expense>('/api/expenses', expense),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
@@ -219,17 +237,23 @@ export function useLoans(params?: { status?: 'all' | 'settled' | 'pending' }) {
   });
 }
 
+export interface Settlement {
+  from: string;
+  to: string;
+  amount: number;
+}
+
+export interface LoanBalances {
+  balances: Record<string, { owed: number; lent: number; net: number }>;
+  settlements: Settlement[];
+}
+
 export function useLoanBalances() {
   const { household } = useAuthStore();
 
   return useQuery({
     queryKey: ['loan-balances', household?.id],
-    queryFn: async () => {
-      const balances = await api.get<Record<string, { owed: number; lent: number; net: number }>>(
-        '/api/loans/balances'
-      );
-      return balances;
-    },
+    queryFn: () => api.get<LoanBalances>('/api/loans/balances'),
     enabled: !!household,
   });
 }
@@ -373,6 +397,8 @@ export function useCreateMeal() {
       meal_name: string;
       notes?: string;
       attendees?: string[];
+      meal_time?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+      poll_group_id?: string;
     }) => api.post<Meal>('/api/meals', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meals'] });
@@ -390,6 +416,7 @@ export function useUpdateMeal() {
       notes?: string;
       date?: string;
       attendees?: string[];
+      meal_time?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
     }) => api.put<Meal>(`/api/meals/${data.id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meals'] });
@@ -424,6 +451,18 @@ export function useLeaveMeal() {
 
   return useMutation({
     mutationFn: (id: string) => api.post<Meal>(`/api/meals/${id}/leave`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meals'] });
+    },
+  });
+}
+
+export function useVoteMeal() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.post<{ meal_id: string; vote_count: number; voted_by_me: boolean }>(`/api/meals/${id}/vote`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meals'] });
     },
@@ -517,7 +556,62 @@ export function useDeleteInventoryItem() {
   });
 }
 
-// ============ Activity Log API (placeholder - would need backend implementation) ============
+// ============ Recurring Bills API ============
+
+export function useRecurringBills() {
+  const { household } = useAuthStore();
+
+  return useQuery({
+    queryKey: ['recurring-bills', household?.id],
+    queryFn: () => api.get<RecurringBill[]>('/api/recurring-bills'),
+    enabled: !!household?.id,
+  });
+}
+
+export function useCreateRecurringBill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      household_id: string;
+      description: string;
+      amount: number;
+      category?: string;
+      split_type?: 'equal' | 'custom' | 'percentage';
+      frequency?: 'weekly' | 'monthly';
+      next_due_date: string;
+    }) => api.post<RecurringBill>('/api/recurring-bills', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurring-bills'] });
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    },
+  });
+}
+
+export function useUpdateRecurringBill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { id: string; is_active?: boolean; description?: string; amount?: number }) =>
+      api.put<RecurringBill>(`/api/recurring-bills/${data.id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurring-bills'] });
+    },
+  });
+}
+
+export function useDeleteRecurringBill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/recurring-bills/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurring-bills'] });
+    },
+  });
+}
+
+// ============ Activity Log API ============
 
 export function useActivityLog() {
   const { household } = useAuthStore();

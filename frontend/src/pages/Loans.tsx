@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useFonts } from '@/hooks/useFonts';
+import { GrainOverlay } from '@/components/shared/GrainOverlay';
 import {
   ArrowLeftRight,
   ArrowUpRight,
@@ -7,7 +9,6 @@ import {
   Plus,
   Search,
   CheckCircle,
-  Clock,
   Users,
   TrendingUp,
   Handshake,
@@ -36,6 +37,7 @@ import {
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuthStore } from '@/store/useAuthStore';
+import { LoadingState, ErrorState } from '@/components/shared/QueryState';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -46,28 +48,13 @@ import {
   useDeleteLoan
 } from '@/hooks/useQueries';
 
-type BalanceRecord = Record<string, { owed: number; lent: number; net: number }>;
 
-/* ─── Fonts & Brand ─── */
-function useFonts() {
-  useEffect(() => {
-    if (document.getElementById('homesync-fonts')) return;
-    const link = document.createElement('link');
-    link.id = 'homesync-fonts';
-    link.rel = 'stylesheet';
-    link.href =
-      'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap';
-    document.head.appendChild(link);
-  }, []);
-}
-
-const grainSvg = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E")`;
 
 export default function Loans() {
   useFonts();
 
   const { user, members, household } = useAuthStore();
-  const { data: loans } = useLoans();
+  const { data: loans, isLoading, isError } = useLoans();
   const { data: balances } = useLoanBalances();
   const addLoan = useAddLoan();
   const settleLoan = useSettleLoan();
@@ -103,12 +90,7 @@ export default function Loans() {
 
   return (
     <ScrollArea className="h-screen bg-homesync-cream font-body text-homesync-ink relative">
-      {/* Global Grain Overlay */}
-      <div
-        className="fixed inset-0 pointer-events-none z-[999] opacity-40 mix-blend-overlay"
-        style={{ backgroundImage: grainSvg }}
-        aria-hidden="true"
-      />
+      <GrainOverlay />
 
       <div className="p-6 lg:p-10 max-w-[1200px] mx-auto relative z-10">
 
@@ -171,7 +153,7 @@ export default function Loans() {
           {/* Card 3: Net Balance */}
           <Card className={cn(
             'rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand text-white shadow-none hover:bg-homesync-bark transition-colors',
-            netBalance >= 0 ? 'bg-homesync-ink' : 'bg-[#3D2B1F]' // homesync-bark variant if negative
+            netBalance >= 0 ? 'bg-homesync-ink' : 'bg-homesync-bark'
           )}>
             <CardContent className="p-6 sm:p-8">
               <div className="w-12 h-12 border-2 border-white/20 flex items-center justify-center mb-8">
@@ -200,11 +182,10 @@ export default function Loans() {
                 Member Balances
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0 flex-1 bg-white">
+            <CardContent className="p-0 flex-1 bg-white dark:bg-homesync-tan">
               <div className="divide-y-2 divide-homesync-sand">
                 {members.map((member) => {
-                  const balanceRecord = balances as BalanceRecord | undefined;
-                  const balance = balanceRecord?.[member.user_id] || { owed: 0, lent: 0, net: 0 };
+                  const balance = balances?.balances?.[member.user_id] || { owed: 0, lent: 0, net: 0 };
                   return (
                     <div key={member.id} className="flex items-center gap-4 p-5 hover:bg-homesync-cream transition-colors">
                       <Avatar className="w-10 h-10 rounded-none border-2 border-homesync-ink">
@@ -247,32 +228,14 @@ export default function Loans() {
                 Action Plan
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0 flex-1 bg-white">
+            <CardContent className="p-0 flex-1 bg-white dark:bg-homesync-tan">
               <div className="divide-y-2 divide-homesync-sand h-full">
                 {(() => {
-                  const suggestions: { from: string; to: string; amount: number }[] = [];
-                  const balanceRecord = balances as BalanceRecord | undefined;
-                  const memberBalances = members.map((m) => ({
-                    id: m.user_id,
-                    name: m.profile?.full_name || '',
-                    balance: balanceRecord?.[m.user_id]?.net || 0,
-                  }));
-
-                  const debtors = memberBalances.filter((m) => m.balance < 0).sort((a, b) => a.balance - b.balance);
-                  const creditors = memberBalances.filter((m) => m.balance > 0).sort((a, b) => b.balance - a.balance);
-
-                  debtors.forEach((debtor) => {
-                    creditors.forEach((creditor) => {
-                      if (debtor.balance < 0 && creditor.balance > 0) {
-                        const amount = Math.min(-debtor.balance, creditor.balance);
-                        if (amount > 0.01) {
-                          suggestions.push({ from: debtor.id, to: creditor.id, amount });
-                          debtor.balance += amount;
-                          creditor.balance -= amount;
-                        }
-                      }
-                    });
-                  });
+                  // Settlements are computed server-side (balanceService.simplifyDebts)
+                  // from BOTH loans and expense splits merged into one graph, so a
+                  // debt chain spanning both collapses into a single suggestion here
+                  // instead of being recomputed (loans-only) on the client.
+                  const suggestions = balances?.settlements || [];
 
                   return suggestions.length > 0 ? suggestions.map((s, i) => {
                     const debtor = members.find((m) => m.user_id === s.from);
@@ -329,11 +292,11 @@ export default function Loans() {
                 placeholder="Search records..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body text-base h-12"
+                className="pl-12 rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-body text-base h-12"
               />
             </div>
             <Select value={filter} onValueChange={(v) => setFilter(v as 'all' | 'settled' | 'pending')}>
-              <SelectTrigger className="w-full sm:w-48 rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-mono text-xs uppercase tracking-widest">
+              <SelectTrigger className="w-full sm:w-48 rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus:ring-0 focus:border-homesync-ink h-12 font-mono text-xs uppercase tracking-widest">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent className="rounded-none border-2 border-homesync-ink font-mono text-xs uppercase tracking-widest bg-homesync-cream">
@@ -346,8 +309,12 @@ export default function Loans() {
 
           <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none">
             <CardContent className="p-0">
-              {filteredLoans.length > 0 ? (
-                <div className="divide-y-2 divide-homesync-sand bg-white">
+              {isLoading ? (
+                <LoadingState label="Loading loans..." />
+              ) : isError ? (
+                <ErrorState message="Failed to load loans. Please try again." />
+              ) : filteredLoans.length > 0 ? (
+                <div className="divide-y-2 divide-homesync-sand bg-white dark:bg-homesync-tan">
                   <AnimatePresence>
                     {filteredLoans.map((loan, index) => (
                       <motion.div
@@ -422,7 +389,8 @@ export default function Loans() {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     settleLoan.mutate(loan.id, {
-                                      onSuccess: () => toast.success('Loan marked as settled!')
+                                      onSuccess: () => toast.success('Loan marked as settled!'),
+                                      onError: (error) => toast.error(error.message || 'Failed to settle loan'),
                                     });
                                   }}
                                 >
@@ -432,13 +400,15 @@ export default function Loans() {
                               <Button
                                 variant="outline"
                                 size="icon"
+                                aria-label="Delete loan"
                                 className="h-8 w-8 rounded-none border-2 border-homesync-rust text-homesync-rust hover:bg-homesync-rust hover:text-white"
                                 disabled={deleteLoan.isPending}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (window.confirm('Are you sure you want to delete this loan?')) {
                                     deleteLoan.mutate(loan.id, {
-                                      onSuccess: () => toast.success('Loan deleted')
+                                      onSuccess: () => toast.success('Loan deleted'),
+                                      onError: (error) => toast.error(error.message || 'Failed to delete loan'),
                                     });
                                   }
                                 }}
@@ -453,7 +423,7 @@ export default function Loans() {
                   </AnimatePresence>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-homesync-muted bg-white border-2 border-dashed border-homesync-sand m-4">
+                <div className="flex flex-col items-center justify-center py-20 text-homesync-muted bg-white dark:bg-homesync-tan border-2 border-dashed border-homesync-sand m-4">
                   <ArrowLeftRight className="w-12 h-12 mb-4 text-homesync-sand opacity-50" />
                   <p className="font-display text-2xl font-bold text-homesync-ink mb-2">
                     No records found
@@ -489,7 +459,7 @@ export default function Loans() {
                     placeholder="0.00"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="pl-8 rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-mono text-lg h-12"
+                    className="pl-8 rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-mono text-lg h-12"
                   />
                 </div>
               </div>
@@ -501,14 +471,14 @@ export default function Loans() {
                   placeholder="What was this loan for?"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12"
+                  className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12"
                 />
               </div>
 
               <div className="space-y-3">
                 <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Borrower</Label>
                 <Select value={borrowerId} onValueChange={setBorrowerId}>
-                  <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-body">
+                  <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus:ring-0 focus:border-homesync-ink h-12 font-body">
                     <SelectValue placeholder="Select borrower" />
                   </SelectTrigger>
                   <SelectContent className="rounded-none border-2 border-homesync-ink bg-homesync-cream font-body">

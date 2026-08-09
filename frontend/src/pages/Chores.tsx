@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { useFonts } from '@/hooks/useFonts';
+import { GrainOverlay } from '@/components/shared/GrainOverlay';
 import {
   CheckSquare,
   Calendar,
@@ -28,6 +30,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useChoreAssignments, useCompleteChore, useCreateChore, useCreateChoreAssignment, useDeleteChoreAssignment } from '@/hooks/useQueries';
 import { useAuthStore } from '@/store/useAuthStore';
+import { LoadingState, ErrorState } from '@/components/shared/QueryState';
 import { format, startOfWeek, addDays, isToday, isSameDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -39,26 +42,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-/* ─── Fonts & Brand ─── */
-function useFonts() {
-  useEffect(() => {
-    if (document.getElementById('homesync-fonts')) return;
-    const link = document.createElement('link');
-    link.id = 'homesync-fonts';
-    link.rel = 'stylesheet';
-    link.href =
-      'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap';
-    document.head.appendChild(link);
-  }, []);
-}
 
-const grainSvg = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E")`;
 
 export default function Chores() {
   useFonts();
 
   const { user, members, household } = useAuthStore();
-  const { data: assignments } = useChoreAssignments();
+  const { data: assignments, isLoading, isError } = useChoreAssignments();
   const completeChore = useCompleteChore();
   const createChore = useCreateChore();
   const createAssignment = useCreateChoreAssignment();
@@ -79,14 +69,16 @@ export default function Chores() {
   const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  // Calculate streak
+  // Current streak comes straight from the backend (chore_assignments.streak_count,
+  // computed on completion in choreService.computeStreakOnCompletion) rather than
+  // being recomputed here — read it off the user's most recently completed
+  // assignment instead of a naive "count consecutive completed rows" reduce,
+  // which didn't check date continuity and could overcount gaps.
   const userAssignments = assignments?.filter((a) => a.user_id === user?.id) || [];
-  const currentStreak = userAssignments.reduce((streak, assignment) => {
-    if (assignment.completed_at) {
-      return streak + 1;
-    }
-    return 0;
-  }, 0);
+  const mostRecentCompleted = userAssignments
+    .filter((a) => a.completed_at)
+    .sort((a, b) => b.assigned_date.localeCompare(a.assigned_date))[0];
+  const currentStreak = mostRecentCompleted?.streak_count ?? 0;
 
   // Calculate completion rate
   const totalAssignments = assignments?.length || 0;
@@ -104,12 +96,7 @@ export default function Chores() {
 
   return (
     <ScrollArea className="h-screen bg-homesync-cream font-body text-homesync-ink relative">
-      {/* Global Grain Overlay */}
-      <div
-        className="fixed inset-0 pointer-events-none z-[999] opacity-40 mix-blend-overlay"
-        style={{ backgroundImage: grainSvg }}
-        aria-hidden="true"
-      />
+      <GrainOverlay />
 
       <div className="p-6 lg:p-10 max-w-[1200px] mx-auto relative z-10">
 
@@ -187,8 +174,9 @@ export default function Chores() {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Previous week"
             onClick={() => setSelectedWeek(addDays(selectedWeek, -7))}
-            className="rounded-none hover:bg-white text-homesync-ink"
+            className="rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
@@ -198,8 +186,9 @@ export default function Chores() {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Next week"
             onClick={() => setSelectedWeek(addDays(selectedWeek, 7))}
-            className="rounded-none hover:bg-white text-homesync-ink"
+            className="rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink"
           >
             <ChevronRight className="w-5 h-5" />
           </Button>
@@ -212,7 +201,7 @@ export default function Chores() {
           transition={{ delay: 0.4 }}
           className="mb-12 overflow-x-auto"
         >
-          <Card className="min-w-[800px] rounded-none border-2 border-homesync-sand bg-white shadow-none">
+          <Card className="min-w-[800px] rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan shadow-none">
             <CardContent className="p-0">
               <div className="grid grid-cols-7 divide-x-2 divide-homesync-sand">
                 {weekDays.map((day) => {
@@ -252,7 +241,7 @@ export default function Chores() {
                                 'p-3 border-2 text-sm transition-all rounded-none',
                                 assignment.completed_at
                                   ? 'border-homesync-olive bg-homesync-tan text-homesync-olive'
-                                  : 'border-homesync-ink bg-white text-homesync-ink'
+                                  : 'border-homesync-ink bg-white dark:bg-homesync-tan text-homesync-ink'
                               )}
                             >
                               <p className={cn(
@@ -301,9 +290,16 @@ export default function Chores() {
                 Today's Ledger
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0 bg-white">
+            <CardContent className="p-0 bg-white dark:bg-homesync-tan">
               <div className="divide-y-2 divide-homesync-sand">
                 {(() => {
+                  if (isLoading) {
+                    return <LoadingState label="Loading chores..." />;
+                  }
+                  if (isError) {
+                    return <ErrorState message="Failed to load chores. Please try again." />;
+                  }
+
                   const todayChores = assignments?.filter((a) =>
                     isToday(new Date(a.assigned_date))
                   ) || [];
@@ -321,10 +317,10 @@ export default function Chores() {
                   return todayChores.map((assignment) => (
                     <motion.div
                       key={assignment.id}
-                      whileHover={{ backgroundColor: '#F5F0E8' }}
+                      whileHover={{ backgroundColor: 'hsl(var(--hs-cream))' }}
                       className={cn(
                         'flex flex-col sm:flex-row sm:items-center gap-4 p-5 transition-colors',
-                        assignment.completed_at ? 'bg-homesync-tan/50' : 'bg-white'
+                        assignment.completed_at ? 'bg-homesync-tan/50' : 'bg-white dark:bg-homesync-tan'
                       )}
                     >
                       <div className={cn(
@@ -387,12 +383,14 @@ export default function Chores() {
                           <Button
                             variant="outline"
                             size="icon"
+                            aria-label="Delete chore assignment"
                             className="rounded-none border-2 border-homesync-rust text-homesync-rust hover:bg-homesync-rust hover:text-white transition-colors"
                             disabled={deleteAssignment.isPending}
                             onClick={() => {
                               if (window.confirm('Delete this chore assignment?')) {
                                 deleteAssignment.mutate(assignment.id, {
-                                  onSuccess: () => toast.success('Chore removed')
+                                  onSuccess: () => toast.success('Chore removed'),
+                                  onError: (error) => toast.error(error.message || 'Failed to remove chore'),
                                 });
                               }
                             }}
@@ -426,7 +424,7 @@ export default function Chores() {
                   placeholder="e.g., Take out the trash"
                   value={choreName}
                   onChange={(e) => setChoreName(e.target.value)}
-                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
+                  className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
                 />
               </div>
 
@@ -438,7 +436,7 @@ export default function Chores() {
                     min="0"
                     value={chorePoints}
                     onChange={(e) => setChorePoints(e.target.value)}
-                    className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-base"
+                    className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-base"
                   />
                 </div>
                 <div className="space-y-3">
@@ -447,7 +445,7 @@ export default function Chores() {
                     type="date"
                     value={assignedDate}
                     onChange={(e) => setAssignedDate(e.target.value)}
-                    className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-xs uppercase"
+                    className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-xs uppercase"
                   />
                 </div>
               </div>
@@ -455,7 +453,7 @@ export default function Chores() {
               <div className="space-y-3">
                 <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Assign To</Label>
                 <Select value={assignedUserId} onValueChange={setAssignedUserId}>
-                  <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-body text-base">
+                  <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus:ring-0 focus:border-homesync-ink h-12 font-body text-base">
                     <SelectValue placeholder="Select member" />
                   </SelectTrigger>
                   <SelectContent className="rounded-none border-2 border-homesync-ink bg-homesync-cream font-body">

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getSupabaseAdmin } from '../config/database';
 import { asyncHandler, ApiError } from '../middleware/errorHandler';
+import { logActivity } from '../services/activityService';
 
 /**
  * Get all inventory items for the user's household
@@ -150,6 +151,13 @@ export const createInventoryItem = asyncHandler(
       throw ApiError.internal(`Failed to create item: ${error.message}`);
     }
 
+    await logActivity(supabase, {
+      householdId: household_id,
+      userId: req.user.id,
+      actionType: 'inventory_created',
+      description: `Added "${name}" to inventory`,
+    });
+
     res.status(201).json({ success: true, data: item });
   }
 );
@@ -209,6 +217,13 @@ export const updateInventoryItem = asyncHandler(
       throw ApiError.internal(`Failed to update item: ${error.message}`);
     }
 
+    await logActivity(supabase, {
+      householdId: item.household_id,
+      userId: req.user.id,
+      actionType: 'inventory_updated',
+      description: `Updated "${updated.name}"`,
+    });
+
     res.json({ success: true, data: updated });
   }
 );
@@ -256,6 +271,13 @@ export const deleteInventoryItem = asyncHandler(
     if (error) {
       throw ApiError.internal(`Failed to delete item: ${error.message}`);
     }
+
+    await logActivity(supabase, {
+      householdId: item.household_id,
+      userId: req.user.id,
+      actionType: 'inventory_deleted',
+      description: `Removed "${item.name}" from inventory`,
+    });
 
     res.json({ success: true, message: 'Item deleted successfully' });
   }
@@ -317,6 +339,17 @@ export const restockItem = asyncHandler(async (req: Request, res: Response): Pro
   if (error) {
     throw ApiError.internal(`Failed to restock item: ${error.message}`);
   }
+
+  const delta = Number(quantity);
+  await logActivity(supabase, {
+    householdId: item.household_id,
+    userId: req.user.id,
+    actionType: delta >= 0 ? 'inventory_restocked' : 'inventory_decremented',
+    description:
+      delta >= 0
+        ? `Restocked "${item.name}" (+${delta} ${item.unit})`
+        : `Used ${Math.abs(delta)} ${item.unit} of "${item.name}"`,
+  });
 
   res.json({ success: true, data: updated });
 });

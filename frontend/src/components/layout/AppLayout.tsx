@@ -1,12 +1,9 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useFonts } from '@/hooks/useFonts';
+import { GrainOverlay } from '@/components/shared/GrainOverlay';
 import {
   Home,
-  Wallet,
-  ArrowLeftRight,
-  CheckSquare,
-  UtensilsCrossed,
-  Package,
   Settings,
   Menu,
   X,
@@ -31,31 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import CommandPalette from '@/components/shared/CommandPalette';
-
-/* ─── Fonts & Brand ─── */
-function useFonts() {
-  useEffect(() => {
-    if (document.getElementById('homesync-fonts')) return;
-    const link = document.createElement('link');
-    link.id = 'homesync-fonts';
-    link.rel = 'stylesheet';
-    link.href =
-      'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap';
-    document.head.appendChild(link);
-  }, []);
-}
-
-const grainSvg = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E")`;
-
-const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: Home },
-  { path: '/expenses', label: 'Expenses', icon: Wallet },
-  { path: '/loans', label: 'Loans', icon: ArrowLeftRight },
-  { path: '/chores', label: 'Chores', icon: CheckSquare },
-  { path: '/meals', label: 'Meals', icon: UtensilsCrossed },
-  { path: '/inventory', label: 'Inventory', icon: Package },
-  { path: '/settings', label: 'Settings', icon: Settings },
-];
+import { navItems } from '@/lib/navigation';
 
 interface AppLayoutProps {
   children?: React.ReactNode;
@@ -95,16 +68,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
     <>
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
 
-      {/* Global Grain Overlay (Placed here to cover the entire app cleanly) */}
-      <div
-        className="fixed inset-0 pointer-events-none z-[999] opacity-40 mix-blend-overlay"
-        style={{ backgroundImage: grainSvg }}
-        aria-hidden="true"
-      />
+      <GrainOverlay />
 
       {/* Mobile header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-homesync-cream border-b-2 border-homesync-ink z-50 flex items-center justify-between px-4">
-        <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} className="rounded-none hover:bg-homesync-tan text-homesync-ink">
+        <Button variant="ghost" size="icon" aria-label="Open menu" onClick={() => setMobileOpen(true)} className="rounded-none hover:bg-homesync-tan text-homesync-ink">
           <Menu className="w-6 h-6" />
         </Button>
         <div className="flex items-center gap-3">
@@ -114,7 +82,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <span className="font-display font-black text-xl text-homesync-ink uppercase tracking-tight">HomeSync</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="rounded-none hover:bg-homesync-tan text-homesync-ink">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="rounded-none hover:bg-homesync-tan text-homesync-ink"
+          >
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </Button>
         </div>
@@ -150,7 +124,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 </div>
                 <span className="font-display font-black text-xl text-homesync-ink uppercase tracking-tight">HomeSync</span>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} className="rounded-none hover:bg-white text-homesync-ink border-2 border-transparent hover:border-homesync-ink">
+              <Button variant="ghost" size="icon" aria-label="Close menu" onClick={() => setMobileOpen(false)} className="rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink border-2 border-transparent hover:border-homesync-ink">
                 <X className="w-5 h-5" />
               </Button>
             </div>
@@ -166,7 +140,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                         'flex items-center gap-4 px-6 py-4 font-mono text-xs uppercase tracking-widest transition-colors border-l-4',
                         isActive
                           ? 'bg-homesync-tan border-homesync-rust text-homesync-ink font-bold'
-                          : 'border-transparent text-homesync-muted hover:bg-white hover:text-homesync-ink hover:border-homesync-sand'
+                          : 'border-transparent text-homesync-muted hover:bg-white dark:hover:bg-homesync-tan hover:text-homesync-ink hover:border-homesync-sand'
                       )
                     }
                   >
@@ -216,8 +190,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <Button
             variant="ghost"
             size="icon"
+            aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hidden lg:flex rounded-none hover:bg-white text-homesync-ink absolute right-2"
+            className="hidden lg:flex rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink absolute right-2"
           >
             <ChevronDown
               className={cn('w-4 h-4 transition-transform', sidebarOpen ? 'rotate-90' : '-rotate-90')}
@@ -226,7 +201,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         {household && (
-          <div className={cn("py-4 border-b-2 border-homesync-sand bg-white transition-all", sidebarOpen ? "px-6" : "px-0 text-center")}>
+          <div className={cn("py-4 border-b-2 border-homesync-sand bg-white dark:bg-homesync-tan transition-all", sidebarOpen ? "px-6" : "px-0 text-center")}>
             {sidebarOpen ? (
               <>
                 <p className="font-mono text-[9px] uppercase tracking-widest text-homesync-muted mb-1">Household</p>
@@ -257,7 +232,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     sidebarOpen ? 'px-6' : 'px-0 justify-center',
                     isActive
                       ? 'bg-homesync-tan border-homesync-rust text-homesync-ink font-bold'
-                      : 'border-transparent text-homesync-muted hover:bg-white hover:text-homesync-ink hover:border-homesync-sand'
+                      : 'border-transparent text-homesync-muted hover:bg-white dark:hover:bg-homesync-tan hover:text-homesync-ink hover:border-homesync-sand'
                   )
                 }
               >
@@ -279,9 +254,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </nav>
         </ScrollArea>
 
-        <div className="p-4 border-t-2 border-homesync-sand bg-white">
+        <div className="p-4 border-t-2 border-homesync-sand bg-white dark:bg-homesync-tan">
           <button
             onClick={() => setCommandOpen(true)}
+            aria-label="Open command palette"
             className={cn(
               "flex items-center border-2 border-homesync-sand bg-homesync-cream hover:border-homesync-ink hover:bg-homesync-tan transition-colors text-homesync-ink rounded-none",
               sidebarOpen ? "w-full px-4 py-3 gap-3" : "w-12 h-12 justify-center mx-auto p-0"
@@ -301,7 +277,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               )}
             </AnimatePresence>
             {sidebarOpen && (
-              <kbd className="hidden sm:inline-flex h-5 items-center gap-0.5 border-2 border-homesync-sand bg-white px-1.5 font-mono text-[9px] font-bold text-homesync-ink rounded-none">
+              <kbd className="hidden sm:inline-flex h-5 items-center gap-0.5 border-2 border-homesync-sand bg-white dark:bg-homesync-tan px-1.5 font-mono text-[9px] font-bold text-homesync-ink rounded-none">
                 <span className="text-[9px]">Ctrl</span>K
               </kbd>
             )}
@@ -312,7 +288,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className={cn(
-                "flex items-center gap-3 w-full border-2 border-transparent hover:bg-white transition-colors p-2 rounded-none",
+                "flex items-center gap-3 w-full border-2 border-transparent hover:bg-white dark:hover:bg-homesync-tan transition-colors p-2 rounded-none",
                 !sidebarOpen && "justify-center"
               )}>
                 <Avatar className="w-10 h-10 rounded-none border-2 border-homesync-ink flex-shrink-0">
@@ -346,7 +322,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   {user?.full_name}
                 </p>
               </div>
-              <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="rounded-none p-3 focus:bg-white cursor-pointer">
+              <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="rounded-none p-3 focus:bg-white dark:focus:bg-homesync-tan cursor-pointer">
                 {theme === 'dark' ? (
                   <>
                     <Sun className="w-4 h-4 mr-3" />
@@ -359,7 +335,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   </>
                 )}
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="rounded-none p-3 focus:bg-white cursor-pointer">
+              <DropdownMenuItem asChild className="rounded-none p-3 focus:bg-white dark:focus:bg-homesync-tan cursor-pointer">
                 <NavLink to="/settings">
                   <Settings className="w-4 h-4 mr-3" />
                   Settings

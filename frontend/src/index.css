@@ -4,6 +4,21 @@
 
 @layer base {
   :root {
+    /* HomeSync brand palette, as HSL triplets so tailwind.config.js's
+       `homesync.*` colors can swap between light/dark via this variable
+       instead of every call site needing a `dark:` prefix. Light values are
+       the exact HSL equivalents of the original hex palette; dark values
+       invert cream/ink and lighten rust/olive for contrast on a dark
+       background — a first design pass, not a final visual sign-off. */
+    --hs-cream: 37 39% 94%;
+    --hs-tan: 38 34% 86%;
+    --hs-bark: 24 33% 18%;
+    --hs-rust: 10 61% 49%;
+    --hs-olive: 146 43% 30%;
+    --hs-sand: 33 42% 71%;
+    --hs-ink: 32 49% 7%;
+    --hs-muted: 29 18% 41%;
+
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -32,6 +47,15 @@
   }
 
   .dark {
+    --hs-cream: 32 30% 9%;
+    --hs-tan: 30 20% 14%;
+    --hs-bark: 30 30% 88%;
+    --hs-rust: 10 65% 58%;
+    --hs-olive: 146 40% 42%;
+    --hs-sand: 30 18% 22%;
+    --hs-ink: 37 30% 92%;
+    --hs-muted: 29 15% 60%;
+
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;

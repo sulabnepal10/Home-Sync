@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useFonts } from '@/hooks/useFonts';
+import { GrainOverlay } from '@/components/shared/GrainOverlay';
 import {
-  Settings as SettingsIcon,
   User,
   Bell,
   Palette,
@@ -13,6 +14,7 @@ import {
   Monitor,
   Copy,
   Check,
+  UserMinus,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,26 +44,23 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTheme } from 'next-themes';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import { apiClient } from '@/lib/api';
-import type { Profile } from '@/types';
+import { useLeaveHousehold, useRemoveMember, useUpdateProfile } from '@/hooks/useQueries';
+import type { NotificationPreferences, Profile } from '@/types';
 
-/* ─── Fonts & Brand ─── */
-function useFonts() {
-  useEffect(() => {
-    if (document.getElementById('homesync-fonts')) return;
-    const link = document.createElement('link');
-    link.id = 'homesync-fonts';
-    link.rel = 'stylesheet';
-    link.href =
-      'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap';
-    document.head.appendChild(link);
-  }, []);
-}
+const defaultNotificationPreferences: NotificationPreferences = {
+  expenses: true,
+  chores: true,
+  meals: true,
+  inventory: true,
+  push: true,
+  email: false,
+};
 
-const grainSvg = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E")`;
+
 
 const themes = [
   { value: 'light', label: 'Light', icon: Sun },
@@ -73,19 +72,28 @@ export default function Settings() {
   useFonts();
 
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
   const { user, household, members, signOut, updateUser } = useAuthStore();
+  const leaveHousehold = useLeaveHousehold();
+  const removeMember = useRemoveMember();
+  const updateProfile = useUpdateProfile();
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [copied, setCopied] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [notifications, setNotifications] = useState({
-    expenses: true,
-    chores: true,
-    meals: true,
-    inventory: true,
-    email: false,
-    push: true,
-  });
+  const [notifications, setNotifications] = useState<NotificationPreferences>(
+    user?.notification_preferences || defaultNotificationPreferences
+  );
+
+  // Sync local toggle state once the real profile (with saved preferences)
+  // loads in — the store starts with a fallback profile before that.
+  useEffect(() => {
+    if (user?.notification_preferences) {
+      setNotifications(user.notification_preferences);
+    }
+  }, [user?.notification_preferences]);
+
+  const isAdmin = members.find((m) => m.user_id === user?.id)?.role === 'admin';
 
   const getInitials = (name: string) =>
     name?.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
@@ -96,6 +104,27 @@ export default function Settings() {
       setCopied(true);
       toast.success('Invite code copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleLeaveHousehold = async () => {
+    try {
+      await leaveHousehold.mutateAsync();
+      useAuthStore.setState({ household: null, members: [] });
+      toast.success('You left the household');
+      navigate('/onboarding');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to leave household');
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    if (!household) return;
+    try {
+      await removeMember.mutateAsync({ householdId: household.id, memberId });
+      toast.success(`Removed ${memberName} from the household`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to remove member');
     }
   };
 
@@ -121,12 +150,7 @@ export default function Settings() {
 
   return (
     <ScrollArea className="h-screen bg-homesync-cream font-body text-homesync-ink relative">
-      {/* Global Grain Overlay */}
-      <div
-        className="fixed inset-0 pointer-events-none z-[999] opacity-40 mix-blend-overlay"
-        style={{ backgroundImage: grainSvg }}
-        aria-hidden="true"
-      />
+      <GrainOverlay />
 
       <div className="p-6 lg:p-10 max-w-[800px] mx-auto relative z-10">
 
@@ -155,7 +179,7 @@ export default function Settings() {
                   Manage your personal information
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-6 bg-white">
+              <CardContent className="p-6 bg-white dark:bg-homesync-tan">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-6">
                   <Avatar className="w-24 h-24 rounded-none border-2 border-homesync-ink flex-shrink-0">
                     <AvatarImage src={user?.avatar_url} className="rounded-none" />
@@ -193,7 +217,7 @@ export default function Settings() {
                   Manage your household settings
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-0 bg-white">
+              <CardContent className="p-0 bg-white dark:bg-homesync-tan">
                 <div className="divide-y-2 divide-homesync-sand">
 
                   <div className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -213,12 +237,13 @@ export default function Settings() {
                   <div className="p-6 bg-homesync-cream">
                     <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold mb-3 block">Invite Code</Label>
                     <div className="flex items-center gap-0">
-                      <code className="flex-1 bg-white border-2 border-r-0 border-homesync-sand p-3 text-lg font-mono font-bold text-homesync-ink h-12 flex items-center">
+                      <code className="flex-1 bg-white dark:bg-homesync-tan border-2 border-r-0 border-homesync-sand p-3 text-lg font-mono font-bold text-homesync-ink h-12 flex items-center">
                         {household?.invite_code}
                       </code>
                       <Button
                         variant="outline"
                         size="icon"
+                        aria-label="Copy invite code"
                         onClick={handleCopyInviteCode}
                         className="h-12 w-12 rounded-none border-2 border-homesync-ink bg-homesync-ink text-white hover:bg-homesync-bark hover:border-homesync-bark transition-colors"
                       >
@@ -242,7 +267,7 @@ export default function Settings() {
                       {members.map((member) => (
                         <div
                           key={member.id}
-                          className="flex items-center gap-4 p-3 border-2 border-homesync-sand bg-white"
+                          className="flex items-center gap-4 p-3 border-2 border-homesync-sand bg-white dark:bg-homesync-tan"
                         >
                           <Avatar className="rounded-none border border-homesync-ink">
                             <AvatarImage src={member.profile?.avatar_url} className="rounded-none" />
@@ -263,10 +288,57 @@ export default function Settings() {
                               You
                             </Badge>
                           )}
+                          {isAdmin && member.user_id !== user?.id && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`Remove ${member.profile?.full_name || 'member'}`}
+                              onClick={() => handleRemoveMember(member.id, member.profile?.full_name || 'this member')}
+                              disabled={removeMember.isPending}
+                              className="rounded-none text-homesync-rust hover:bg-homesync-rust/10 hover:text-homesync-rust"
+                            >
+                              <UserMinus className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       ))}
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Appearance Section */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none">
+              <CardHeader className="border-b-2 border-homesync-sand bg-homesync-tan pb-6">
+                <CardTitle className="font-display text-2xl font-bold text-homesync-ink flex items-center gap-3">
+                  <Palette className="w-6 h-6 text-homesync-ink" />
+                  Appearance
+                </CardTitle>
+                <CardDescription className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted mt-2">
+                  Choose how HomeSync looks on this device
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6 bg-white dark:bg-homesync-tan">
+                <div className="grid grid-cols-3 gap-3">
+                  {themes.map(({ value, label, icon: Icon }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setTheme(value)}
+                      aria-pressed={theme === value}
+                      className={`flex flex-col items-center gap-2 p-4 border-2 font-mono text-[10px] uppercase tracking-widest transition-colors ${
+                        theme === value
+                          ? 'border-homesync-ink bg-homesync-ink text-homesync-cream'
+                          : 'border-homesync-sand text-homesync-ink hover:bg-homesync-tan'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -284,7 +356,7 @@ export default function Settings() {
                   Control your alert preferences
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-0 bg-white">
+              <CardContent className="p-0 bg-white dark:bg-homesync-tan">
                 <div className="divide-y-2 divide-homesync-sand">
                   {[
                     { key: 'expenses', label: 'Expense Updates', desc: 'Notified on new shared expenses' },
@@ -303,10 +375,22 @@ export default function Settings() {
                         </p>
                       </div>
                       <Switch
-                        checked={notifications[item.key as keyof typeof notifications]}
-                        onCheckedChange={(checked) =>
-                          setNotifications((prev) => ({ ...prev, [item.key]: checked }))
-                        }
+                        checked={notifications[item.key as keyof NotificationPreferences]}
+                        disabled={updateProfile.isPending}
+                        onCheckedChange={(checked) => {
+                          const updated = { ...notifications, [item.key]: checked };
+                          setNotifications(updated);
+                          updateProfile.mutate(
+                            { notification_preferences: updated },
+                            {
+                              onSuccess: (profile) => updateUser({ notification_preferences: profile.notification_preferences }),
+                              onError: (error) => {
+                                setNotifications(notifications);
+                                toast.error(error instanceof Error ? error.message : 'Failed to update preference');
+                              },
+                            }
+                          );
+                        }}
                         className="data-[state=checked]:bg-homesync-olive"
                       />
                     </div>
@@ -319,7 +403,7 @@ export default function Settings() {
           {/* Danger Zone */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
             <Card className="rounded-none border-2 border-homesync-rust bg-homesync-rust/5 shadow-none">
-              <CardHeader className="border-b-2 border-homesync-rust bg-white pb-6">
+              <CardHeader className="border-b-2 border-homesync-rust bg-white dark:bg-homesync-tan pb-6">
                 <CardTitle className="font-display text-2xl font-bold text-homesync-rust flex items-center gap-3">
                   <Shield className="w-6 h-6" />
                   Danger Zone
@@ -328,7 +412,7 @@ export default function Settings() {
                   Irreversible and destructive actions
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-6 bg-white">
+              <CardContent className="p-6 bg-white dark:bg-homesync-tan">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <p className="font-body font-bold text-homesync-ink mb-1">
@@ -345,7 +429,7 @@ export default function Settings() {
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="rounded-none border-2 border-homesync-rust bg-homesync-cream p-0 shadow-[8px_8px_0px_rgba(200,75,49,1)]">
-                      <AlertDialogHeader className="p-6 bg-white border-b-2 border-homesync-rust">
+                      <AlertDialogHeader className="p-6 bg-white dark:bg-homesync-tan border-b-2 border-homesync-rust">
                         <AlertDialogTitle className="font-display text-3xl font-black text-homesync-rust">Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription className="font-body text-homesync-muted mt-2">
                           This action cannot be undone. You will lose access to all household data
@@ -353,11 +437,15 @@ export default function Settings() {
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter className="p-6 bg-homesync-tan border-t-2 border-homesync-rust flex justify-end gap-3 sm:gap-0">
-                        <AlertDialogCancel className="rounded-none border-2 border-homesync-ink bg-transparent text-homesync-ink hover:bg-white font-mono text-xs uppercase tracking-widest px-6">
+                        <AlertDialogCancel className="rounded-none border-2 border-homesync-ink bg-transparent text-homesync-ink hover:bg-white dark:hover:bg-homesync-tan font-mono text-xs uppercase tracking-widest px-6">
                           Cancel
                         </AlertDialogCancel>
-                        <AlertDialogAction className="rounded-none bg-homesync-rust text-white hover:bg-homesync-bark font-mono text-xs uppercase tracking-widest px-6 ml-3">
-                          Leave
+                        <AlertDialogAction
+                          onClick={handleLeaveHousehold}
+                          disabled={leaveHousehold.isPending}
+                          className="rounded-none bg-homesync-rust text-white hover:bg-homesync-bark font-mono text-xs uppercase tracking-widest px-6 ml-3"
+                        >
+                          {leaveHousehold.isPending ? 'Leaving...' : 'Leave'}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -404,7 +492,7 @@ export default function Settings() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Enter your name"
-                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
+                  className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
                 />
               </div>
             </div>

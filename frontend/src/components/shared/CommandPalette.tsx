@@ -9,36 +9,15 @@ import {
   CommandShortcut,
 } from '@/components/ui/command';
 import { useNavigate } from 'react-router-dom';
-import {
-  Home,
-  Wallet,
-  ArrowLeftRight,
-  CheckSquare,
-  UtensilsCrossed,
-  Package,
-  Settings,
-  Plus,
-  Moon,
-  Sun,
-  LogOut,
-} from 'lucide-react';
+import { Plus, Moon, Sun, LogOut } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuthStore } from '@/store/useAuthStore';
+import { navItems } from '@/lib/navigation';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: Home, shortcut: 'G D' },
-  { path: '/expenses', label: 'Expenses', icon: Wallet, shortcut: 'G E' },
-  { path: '/loans', label: 'Loans', icon: ArrowLeftRight, shortcut: 'G L' },
-  { path: '/chores', label: 'Chores', icon: CheckSquare, shortcut: 'G C' },
-  { path: '/meals', label: 'Meals', icon: UtensilsCrossed, shortcut: 'G M' },
-  { path: '/inventory', label: 'Inventory', icon: Package, shortcut: 'G I' },
-  { path: '/settings', label: 'Settings', icon: Settings, shortcut: 'G S' },
-];
 
 export default function CommandPalette({ open, onOpenChange }: Props) {
   const navigate = useNavigate();
@@ -94,6 +73,15 @@ export default function CommandPalette({ open, onOpenChange }: Props) {
         <CommandSeparator />
 
         <CommandGroup heading="Preferences">
+          <CommandItem
+            onSelect={() => {
+              setTheme(theme === 'dark' ? 'light' : 'dark');
+              onOpenChange(false);
+            }}
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4 mr-2" /> : <Moon className="w-4 h-4 mr-2" />}
+            Toggle Theme
+          </CommandItem>
           <CommandItem
             onSelect={() => {
               signOut();

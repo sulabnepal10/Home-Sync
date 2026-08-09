@@ -1,36 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, Mail, Lock, User, Eye, EyeOff, ArrowLeft, Home } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import { useFonts } from '@/hooks/useFonts';
 
-/* ─── Font injection (same as Landing) ─── */
-function useFonts() {
-  useEffect(() => {
-    if (document.getElementById('homesync-fonts')) return;
-    const link = document.createElement('link');
-    link.id = 'homesync-fonts';
-    link.rel = 'stylesheet';
-    link.href =
-      'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap';
-    document.head.appendChild(link);
-  }, []);
-}
 
 const grainSvg = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E")`;
 
 const css = `
   :root {
-    --cream:  #F5F0E8;
-    --tan:    #E8DFD0;
-    --bark:   #3D2B1F;
-    --rust:   #C84B31;
-    --olive:  #2C6E49;
-    --sand:   #D4B896;
-    --ink:    #1A1209;
-    --muted:  #7A6755;
+    /* Aliased to the shared --hs-* variables (src/index.css) so this page's
+       colors invert under dark mode instead of duplicating the palette. */
+    --cream:  hsl(var(--hs-cream));
+    --tan:    hsl(var(--hs-tan));
+    --bark:   hsl(var(--hs-bark));
+    --rust:   hsl(var(--hs-rust));
+    --olive:  hsl(var(--hs-olive));
+    --sand:   hsl(var(--hs-sand));
+    --ink:    hsl(var(--hs-ink));
+    --muted:  hsl(var(--hs-muted));
     --ff-display: 'Playfair Display', Georgia, serif;
     --ff-mono:    'DM Mono', 'Courier New', monospace;
     --ff-body:    'DM Sans', system-ui, sans-serif;
@@ -461,7 +452,7 @@ export default function Auth() {
   useFonts();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get('mode') === 'signup' ? 'signup' : 'signin';
-  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>(defaultTab as 'signin' | 'signup');
+  const [activeTab, setActiveTab] = useState<'signin' | 'signup' | 'forgot'>(defaultTab as 'signin' | 'signup');
 
   const [signInEmail, setSignInEmail] = useState('');
   const [signInPassword, setSignInPassword] = useState('');
@@ -472,9 +463,13 @@ export default function Auth() {
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpLoading, setSignUpLoading] = useState(false);
 
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+
   const [showPassword, setShowPassword] = useState(false);
 
-  const { signIn, signUp } = useAuthStore();
+  const { signIn, signUp, signInWithGoogle, requestPasswordReset } = useAuthStore();
   const navigate = useNavigate();
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -506,7 +501,29 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    try {
+      await requestPasswordReset(forgotEmail);
+      setForgotSent(true);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to send reset email');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to sign in with Google');
+    }
+  };
+
   const isSignIn = activeTab === 'signin';
+  const isForgot = activeTab === 'forgot';
 
   return (
     <>
@@ -586,19 +603,22 @@ export default function Auth() {
               transition={{ duration: 0.3 }}
             >
               <div className="auth-form-kicker">
-                {isSignIn ? 'Welcome back' : 'Get started'}
+                {isForgot ? 'Reset password' : isSignIn ? 'Welcome back' : 'Get started'}
               </div>
               <h1 className="auth-form-title">
-                {isSignIn ? 'Sign in to your\nhousehold' : 'Create your\naccount'}
+                {isForgot ? 'Reset your\npassword' : isSignIn ? 'Sign in to your\nhousehold' : 'Create your\naccount'}
               </h1>
               <p className="auth-form-subtitle">
-                {isSignIn
+                {isForgot
+                  ? "Enter your email and we'll send you a reset link."
+                  : isSignIn
                   ? 'Enter your credentials to continue.'
                   : 'It only takes a moment to get started.'}
               </p>
             </motion.div>
 
             {/* Tab switcher */}
+            {!isForgot && (
             <div className="auth-tabs">
               <button
                 className={`auth-tab${activeTab === 'signin' ? ' active' : ''}`}
@@ -613,6 +633,18 @@ export default function Auth() {
                 Sign Up
               </button>
             </div>
+            )}
+
+            {!isForgot && (
+              <button
+                type="button"
+                className="auth-submit"
+                onClick={handleGoogleSignIn}
+                style={{ background: 'var(--cream)', color: 'var(--ink)', border: '1.5px solid var(--sand)', marginBottom: 16 }}
+              >
+                Continue with Google
+              </button>
+            )}
 
             {/* ── SIGN IN FORM ── */}
             {isSignIn && (
@@ -663,6 +695,17 @@ export default function Auth() {
                   </div>
                 </div>
 
+                <div style={{ textAlign: 'right', marginBottom: '1rem' }}>
+                  <button
+                    type="button"
+                    className="auth-back"
+                    style={{ marginBottom: 0 }}
+                    onClick={() => setActiveTab('forgot')}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+
                 <button className="auth-submit" type="submit" disabled={signInLoading}>
                   {signInLoading
                     ? <><Loader2 size={14} className="spin" /> Signing in...</>
@@ -672,8 +715,62 @@ export default function Auth() {
               </motion.form>
             )}
 
+            {/* ── FORGOT PASSWORD FORM ── */}
+            {isForgot && (
+              <motion.form
+                key="forgot"
+                onSubmit={handleForgotPassword}
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {forgotSent ? (
+                  <p className="auth-form-subtitle" style={{ marginBottom: 16 }}>
+                    If an account exists for {forgotEmail}, a reset link is on its way — check your inbox.
+                  </p>
+                ) : (
+                  <div className="auth-field">
+                    <label className="auth-label" htmlFor="forgot-email">Email address</label>
+                    <div className="auth-input-wrap">
+                      <span className="auth-input-icon"><Mail size={14} /></span>
+                      <input
+                        id="forgot-email"
+                        className="auth-input"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={forgotEmail}
+                        onChange={e => setForgotEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {!forgotSent && (
+                  <button className="auth-submit" type="submit" disabled={forgotLoading}>
+                    {forgotLoading
+                      ? <><Loader2 size={14} className="spin" /> Sending...</>
+                      : 'Send Reset Link →'
+                    }
+                  </button>
+                )}
+
+                <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                  <button
+                    type="button"
+                    className="auth-back"
+                    style={{ display: 'inline-flex', marginBottom: 0 }}
+                    onClick={() => { setActiveTab('signin'); setForgotSent(false); }}
+                  >
+                    <ArrowLeft size={12} />
+                    Back to sign in
+                  </button>
+                </div>
+              </motion.form>
+            )}
+
             {/* ── SIGN UP FORM ── */}
-            {!isSignIn && (
+            {activeTab === 'signup' && (
               <motion.form
                 key="signup"
                 onSubmit={handleSignUp}

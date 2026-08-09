@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getSupabaseAdmin } from '../config/database';
 import { asyncHandler, ApiError } from '../middleware/errorHandler';
+import { logActivity } from '../services/activityService';
 
 /**
  * Get all meals for the user's household
@@ -27,7 +28,7 @@ export const getMeals = asyncHandler(async (req: Request, res: Response): Promis
 
   let query = supabase
     .from('meals')
-    .select('*, chef:profiles!chef_id(id, full_name, avatar_url)')
+    .select('*, chef:profiles!chef_id(id, full_name, avatar_url), meal_votes(user_id)')
     .eq('household_id', membership.household_id);
 
   if (start_date) {
@@ -47,8 +48,23 @@ export const getMeals = asyncHandler(async (req: Request, res: Response): Promis
     throw ApiError.internal(`Failed to fetch meals: ${error.message}`);
   }
 
-  res.json({ success: true, data: meals });
+  res.json({ success: true, data: withVoteCounts(meals || [], req.user.id) });
 });
+
+/**
+ * Attaches vote_count and voted_by_me to each meal from its nested
+ * meal_votes rows (only present on meals that are part of a poll).
+ */
+function withVoteCounts(
+  meals: { meal_votes?: { user_id: string }[] }[],
+  userId: string
+) {
+  return meals.map(({ meal_votes, ...meal }) => ({
+    ...meal,
+    vote_count: meal_votes?.length ?? 0,
+    voted_by_me: meal_votes?.some((v) => v.user_id === userId) ?? false,
+  }));
+}
 
 /**
  * Get a single meal by ID
@@ -100,7 +116,7 @@ export const createMeal = asyncHandler(async (req: Request, res: Response): Prom
     throw ApiError.unauthorized();
   }
 
-  const { household_id, date, meal_name, notes, attendees } = req.body;
+  const { household_id, date, meal_name, notes, attendees, meal_time, poll_group_id } = req.body;
 
   if (!household_id || !date || !meal_name) {
     throw ApiError.badRequest('Household ID, date, and meal name are required');
@@ -129,6 +145,8 @@ export const createMeal = asyncHandler(async (req: Request, res: Response): Prom
       meal_name,
       notes: notes || '',
       attendees: attendees || [],
+      meal_time: meal_time || 'dinner',
+      poll_group_id: poll_group_id || null,
     })
     .select()
     .single();
@@ -136,6 +154,13 @@ export const createMeal = asyncHandler(async (req: Request, res: Response): Prom
   if (error) {
     throw ApiError.internal(`Failed to create meal: ${error.message}`);
   }
+
+  await logActivity(supabase, {
+    householdId: household_id,
+    userId: req.user.id,
+    actionType: 'meal_created',
+    description: `Planned "${meal_name}" for ${date}`,
+  });
 
   res.status(201).json({ success: true, data: meal });
 });
@@ -150,7 +175,7 @@ export const updateMeal = asyncHandler(async (req: Request, res: Response): Prom
   }
 
   const { id } = req.params;
-  const { meal_name, notes, date, attendees } = req.body;
+  const { meal_name, notes, date, attendees, meal_time } = req.body;
 
   const supabase = getSupabaseAdmin();
 
@@ -174,6 +199,7 @@ export const updateMeal = asyncHandler(async (req: Request, res: Response): Prom
   if (notes !== undefined) updateData.notes = notes;
   if (date) updateData.date = date;
   if (attendees !== undefined) updateData.attendees = attendees;
+  if (meal_time) updateData.meal_time = meal_time;
 
   const { data: updated, error } = await supabase
     .from('meals')
@@ -185,6 +211,13 @@ export const updateMeal = asyncHandler(async (req: Request, res: Response): Prom
   if (error) {
     throw ApiError.internal(`Failed to update meal: ${error.message}`);
   }
+
+  await logActivity(supabase, {
+    householdId: meal.household_id,
+    userId: req.user.id,
+    actionType: 'meal_updated',
+    description: `Updated meal "${updated.meal_name}"`,
+  });
 
   res.json({ success: true, data: updated });
 });
@@ -232,6 +265,13 @@ export const deleteMeal = asyncHandler(async (req: Request, res: Response): Prom
   if (error) {
     throw ApiError.internal(`Failed to delete meal: ${error.message}`);
   }
+
+  await logActivity(supabase, {
+    householdId: meal.household_id,
+    userId: req.user.id,
+    actionType: 'meal_deleted',
+    description: `Deleted meal "${meal.meal_name}"`,
+  });
 
   res.json({ success: true, message: 'Meal deleted successfully' });
 });
@@ -288,6 +328,13 @@ export const joinMeal = asyncHandler(async (req: Request, res: Response): Promis
     throw ApiError.internal(`Failed to join meal: ${error.message}`);
   }
 
+  await logActivity(supabase, {
+    householdId: meal.household_id,
+    userId: req.user.id,
+    actionType: 'meal_joined',
+    description: `Joined "${meal.meal_name}"`,
+  });
+
   res.json({ success: true, data: updated });
 });
 
@@ -330,7 +377,82 @@ export const leaveMeal = asyncHandler(async (req: Request, res: Response): Promi
     throw ApiError.internal(`Failed to leave meal: ${error.message}`);
   }
 
+  await logActivity(supabase, {
+    householdId: meal.household_id,
+    userId: req.user.id,
+    actionType: 'meal_left',
+    description: `Opted out of "${meal.meal_name}"`,
+  });
+
   res.json({ success: true, data: updated });
+});
+
+/**
+ * Toggle the current user's vote on a meal (used for meal polls — a set of
+ * candidate meals sharing a poll_group_id). Voting for a meal you're not
+ * attending is allowed; voting and attendance are tracked separately.
+ * POST /api/meals/:id/vote
+ */
+export const voteMeal = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user) {
+    throw ApiError.unauthorized();
+  }
+
+  const { id } = req.params;
+  const supabase = getSupabaseAdmin();
+
+  const { data: meal } = await supabase.from('meals').select('*').eq('id', id).maybeSingle();
+
+  if (!meal) {
+    throw ApiError.notFound('Meal not found');
+  }
+
+  const { data: membership } = await supabase
+    .from('household_members')
+    .select('*')
+    .eq('user_id', req.user.id)
+    .eq('household_id', meal.household_id)
+    .maybeSingle();
+
+  if (!membership) {
+    throw ApiError.forbidden('Access denied');
+  }
+
+  const { data: existingVote } = await supabase
+    .from('meal_votes')
+    .select('id')
+    .eq('meal_id', id)
+    .eq('user_id', req.user.id)
+    .maybeSingle();
+
+  if (existingVote) {
+    const { error } = await supabase.from('meal_votes').delete().eq('id', existingVote.id);
+    if (error) {
+      throw ApiError.internal(`Failed to remove vote: ${error.message}`);
+    }
+  } else {
+    const { error } = await supabase.from('meal_votes').insert({ meal_id: id, user_id: req.user.id });
+    if (error) {
+      throw ApiError.internal(`Failed to cast vote: ${error.message}`);
+    }
+    await logActivity(supabase, {
+      householdId: meal.household_id,
+      userId: req.user.id,
+      actionType: 'meal_voted',
+      description: `Voted for "${meal.meal_name}"`,
+    });
+  }
+
+  const { data: votes } = await supabase.from('meal_votes').select('user_id').eq('meal_id', id);
+
+  res.json({
+    success: true,
+    data: {
+      meal_id: id,
+      vote_count: votes?.length ?? 0,
+      voted_by_me: !existingVote,
+    },
+  });
 });
 
 export default {
@@ -341,4 +463,5 @@ export default {
   deleteMeal,
   joinMeal,
   leaveMeal,
+  voteMeal,
 };

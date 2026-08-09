@@ -7,8 +7,11 @@ import {
   deleteMeal,
   joinMeal,
   leaveMeal,
+  voteMeal,
 } from '../controllers/mealController';
 import { requireAuth } from '../middleware/requireAuth';
+import { validateBody, validateQuery } from '../middleware/validate';
+import { createMealSchema, mealQuerySchema, updateMealSchema } from '../validation/meal.schemas';
 
 const router: Router = Router();
 
@@ -16,16 +19,16 @@ const router: Router = Router();
 router.use(requireAuth);
 
 // GET /api/meals - Get all meals for household
-router.get('/', getMeals);
+router.get('/', validateQuery(mealQuerySchema), getMeals);
 
 // POST /api/meals - Create a new meal
-router.post('/', createMeal);
+router.post('/', validateBody(createMealSchema), createMeal);
 
 // GET /api/meals/:id - Get a single meal
 router.get('/:id', getMeal);
 
 // PUT /api/meals/:id - Update a meal
-router.put('/:id', updateMeal);
+router.put('/:id', validateBody(updateMealSchema), updateMeal);
 
 // DELETE /api/meals/:id - Delete a meal
 router.delete('/:id', deleteMeal);
@@ -35,5 +38,8 @@ router.post('/:id/join', joinMeal);
 
 // POST /api/meals/:id/leave - Leave a meal
 router.post('/:id/leave', leaveMeal);
+
+// POST /api/meals/:id/vote - Toggle your vote on a meal (poll candidates)
+router.post('/:id/vote', voteMeal);
 
 export default router;
