@@ -179,6 +179,7 @@ export function useAddExpense() {
       category: string;
       split_type: 'equal' | 'custom' | 'percentage';
       splits: { user_id: string; amount: number }[];
+      split_config?: Record<string, number>;
     }) => api.post<Expense>('/api/expenses', expense),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });

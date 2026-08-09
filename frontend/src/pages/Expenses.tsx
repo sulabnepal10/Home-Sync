@@ -49,12 +49,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useExpenses, useAddExpense, useExpenseSummary } from '@/hooks/useQueries';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LoadingState, ErrorState } from '@/components/shared/QueryState';
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { computeSplits } from '@/lib/splitCalculator';
 
 /* ─── Fonts & Brand ─── */
 function useFonts() {
@@ -98,8 +100,10 @@ export default function Expenses() {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('groceries');
-  const [splitType, setSplitType] = useState<'equal' | 'custom'>('equal');
+  const [splitType, setSplitType] = useState<'equal' | 'custom' | 'percentage'>('equal');
   const [customSplits, setCustomSplits] = useState<Record<string, string>>({});
+  const [percentageSplits, setPercentageSplits] = useState<Record<string, string>>({});
+  const [equalSplitMembers, setEqualSplitMembers] = useState<string[]>([]);
 
   const filteredExpenses = expenses?.filter((expense) => {
     const matchesSearch =
@@ -133,27 +137,38 @@ export default function Expenses() {
       toast.error('Please enter a valid amount');
       return;
     }
-    try {
-      let splits: { user_id: string; amount: number }[] = [];
-      if (splitType === 'equal') {
-        const splitAmount = amountNum / members.length;
-        splits = members.map((member) => ({
-          user_id: member.user_id,
-          amount: splitAmount,
-        }));
-      } else {
-        const totalSplit = Object.values(customSplits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
-        if (Math.abs(totalSplit - amountNum) > 0.01) {
-          toast.error('Split amounts must equal the total amount');
-          return;
-        }
-        splits = Object.entries(customSplits)
-          .filter(([_, value]) => value && parseFloat(value) > 0)
-          .map(([userId, value]) => ({
-            user_id: userId,
-            amount: parseFloat(value),
-          }));
+    let splits: { user_id: string; amount: number }[] = [];
+    let splitConfig: Record<string, number> | undefined;
+
+    if (splitType === 'equal') {
+      if (equalSplitMembers.length === 0) {
+        toast.error('Select at least one person to split with');
+        return;
       }
+      splits = computeSplits(amountNum, 'equal', equalSplitMembers);
+    } else if (splitType === 'percentage') {
+      const sumPct = members.reduce((sum, m) => sum + (parseFloat(percentageSplits[m.user_id]) || 0), 0);
+      if (Math.abs(sumPct - 100) > 0.5) {
+        toast.error(`Percentages must add up to 100 (currently ${sumPct.toFixed(1)})`);
+        return;
+      }
+      splitConfig = Object.fromEntries(members.map((m) => [m.user_id, parseFloat(percentageSplits[m.user_id]) || 0]));
+      splits = computeSplits(amountNum, 'percentage', members.map((m) => m.user_id), splitConfig);
+    } else {
+      const totalSplit = Object.values(customSplits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+      if (Math.abs(totalSplit - amountNum) > 0.01) {
+        toast.error('Split amounts must equal the total amount');
+        return;
+      }
+      splits = Object.entries(customSplits)
+        .filter(([, value]) => value && parseFloat(value) > 0)
+        .map(([userId, value]) => ({
+          user_id: userId,
+          amount: parseFloat(value),
+        }));
+    }
+
+    try {
       await addExpense.mutateAsync({
         household_id: household.id,
         amount: amountNum,
@@ -161,12 +176,13 @@ export default function Expenses() {
         category,
         split_type: splitType,
         splits,
+        ...(splitConfig ? { split_config: splitConfig } : {}),
       });
       toast.success('Expense added successfully');
       setAddModalOpen(false);
       resetForm();
-    } catch {
-      toast.error('Failed to add expense');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add expense');
     }
   };
 
@@ -176,6 +192,8 @@ export default function Expenses() {
     setCategory('groceries');
     setSplitType('equal');
     setCustomSplits({});
+    setPercentageSplits({});
+    setEqualSplitMembers(members.map((m) => m.user_id));
   };
 
   return (
@@ -203,7 +221,10 @@ export default function Expenses() {
 
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
             <Button
-              onClick={() => setAddModalOpen(true)}
+              onClick={() => {
+                setEqualSplitMembers(members.map((m) => m.user_id));
+                setAddModalOpen(true);
+              }}
               className="rounded-none border-2 border-homesync-ink bg-homesync-ink text-homesync-cream hover:bg-homesync-rust hover:border-homesync-rust font-mono text-xs uppercase tracking-widest px-6 py-6 transition-colors"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -496,30 +517,98 @@ export default function Expenses() {
 
               <div className="space-y-3 pt-2">
                 <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Split Strategy</Label>
-                <Tabs value={splitType} onValueChange={(v) => setSplitType(v as 'equal' | 'custom')}>
-                  <TabsList className="grid grid-cols-2 bg-transparent border-2 border-homesync-ink rounded-none p-0 h-auto">
+                <Tabs value={splitType} onValueChange={(v) => setSplitType(v as 'equal' | 'custom' | 'percentage')}>
+                  <TabsList className="grid grid-cols-3 bg-transparent border-2 border-homesync-ink rounded-none p-0 h-auto">
                     <TabsTrigger
                       value="equal"
                       className="rounded-none font-mono text-[10px] uppercase tracking-widest py-3 data-[state=active]:bg-homesync-ink data-[state=active]:text-white transition-none"
                     >
-                      Equal Split
+                      Equal
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="percentage"
+                      className="rounded-none font-mono text-[10px] uppercase tracking-widest py-3 data-[state=active]:bg-homesync-ink data-[state=active]:text-white transition-none"
+                    >
+                      Percentage
                     </TabsTrigger>
                     <TabsTrigger
                       value="custom"
                       className="rounded-none font-mono text-[10px] uppercase tracking-widest py-3 data-[state=active]:bg-homesync-ink data-[state=active]:text-white transition-none"
                     >
-                      Custom Split
+                      Custom
                     </TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="equal" className="pt-4">
+                  <TabsContent value="equal" className="pt-4 space-y-3">
+                    <p className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted">
+                      Only 2 people ate dinner? Uncheck who's not splitting this one.
+                    </p>
+                    <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2">
+                      {members.map((member) => (
+                        <label
+                          key={member.user_id}
+                          className="flex items-center gap-3 bg-white border border-homesync-sand p-3 cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={equalSplitMembers.includes(member.user_id)}
+                            onCheckedChange={(checked) =>
+                              setEqualSplitMembers((prev) =>
+                                checked
+                                  ? [...prev, member.user_id]
+                                  : prev.filter((id) => id !== member.user_id)
+                              )
+                            }
+                            className="rounded-none border-2 border-homesync-ink data-[state=checked]:bg-homesync-ink"
+                          />
+                          <span className="flex-1 font-body text-sm font-bold text-homesync-ink truncate">
+                            {member.profile?.full_name}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
                     <div className="bg-white border-2 border-homesync-sand p-4 text-sm font-mono text-homesync-muted">
-                      Splitting equally among {members.length} members.
+                      Splitting equally among {equalSplitMembers.length} of {members.length} members.
                       <br />
                       <span className="text-homesync-ink font-bold mt-2 inline-block">
-                        {members.length > 0 && amount && `$${(parseFloat(amount || '0') / members.length).toFixed(2)} per person`}
+                        {equalSplitMembers.length > 0 && amount &&
+                          `$${(parseFloat(amount || '0') / equalSplitMembers.length).toFixed(2)} per person`}
                       </span>
                     </div>
+                  </TabsContent>
+
+                  <TabsContent value="percentage" className="pt-4 space-y-3 max-h-[240px] overflow-y-auto pr-2">
+                    {members.map((member) => (
+                      <div key={member.user_id} className="flex items-center gap-3 bg-white border border-homesync-sand p-3">
+                        <Avatar className="w-8 h-8 rounded-none border border-homesync-ink">
+                          <AvatarImage src={member.profile?.avatar_url} className="rounded-none" />
+                          <AvatarFallback className="text-[10px] font-mono rounded-none bg-homesync-tan text-homesync-ink">
+                            {getInitials(member.profile?.full_name || '')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="flex-1 font-body text-sm font-bold text-homesync-ink truncate">
+                          {member.profile?.full_name}
+                        </span>
+                        <div className="relative w-20">
+                          <Input
+                            type="number"
+                            step="1"
+                            placeholder="0"
+                            value={percentageSplits[member.user_id] || ''}
+                            onChange={(e) =>
+                              setPercentageSplits((prev) => ({
+                                ...prev,
+                                [member.user_id]: e.target.value,
+                              }))
+                            }
+                            className="pr-6 rounded-none border-2 border-homesync-sand focus-visible:border-homesync-ink focus-visible:ring-0 font-mono text-sm h-9"
+                          />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-homesync-muted font-mono text-xs">%</span>
+                        </div>
+                      </div>
+                    ))}
+                    <p className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted">
+                      Total: {members.reduce((sum, m) => sum + (parseFloat(percentageSplits[m.user_id]) || 0), 0).toFixed(1)}% (must equal 100%)
+                    </p>
                   </TabsContent>
 
                   <TabsContent value="custom" className="pt-4 space-y-3 max-h-[200px] overflow-y-auto pr-2">
