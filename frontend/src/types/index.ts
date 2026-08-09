@@ -1,8 +1,18 @@
+export interface NotificationPreferences {
+  expenses: boolean;
+  chores: boolean;
+  meals: boolean;
+  inventory: boolean;
+  push: boolean;
+  email: boolean;
+}
+
 export interface Profile {
   id: string;
   full_name: string;
   avatar_url: string;
   created_at: string;
+  notification_preferences?: NotificationPreferences;
 }
 
 export interface Household {

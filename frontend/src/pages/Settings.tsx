@@ -47,8 +47,17 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api';
-import { useLeaveHousehold, useRemoveMember } from '@/hooks/useQueries';
-import type { Profile } from '@/types';
+import { useLeaveHousehold, useRemoveMember, useUpdateProfile } from '@/hooks/useQueries';
+import type { NotificationPreferences, Profile } from '@/types';
+
+const defaultNotificationPreferences: NotificationPreferences = {
+  expenses: true,
+  chores: true,
+  meals: true,
+  inventory: true,
+  push: true,
+  email: false,
+};
 
 /* ─── Fonts & Brand ─── */
 function useFonts() {
@@ -79,18 +88,22 @@ export default function Settings() {
   const { user, household, members, signOut, updateUser } = useAuthStore();
   const leaveHousehold = useLeaveHousehold();
   const removeMember = useRemoveMember();
+  const updateProfile = useUpdateProfile();
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [copied, setCopied] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [notifications, setNotifications] = useState({
-    expenses: true,
-    chores: true,
-    meals: true,
-    inventory: true,
-    email: false,
-    push: true,
-  });
+  const [notifications, setNotifications] = useState<NotificationPreferences>(
+    user?.notification_preferences || defaultNotificationPreferences
+  );
+
+  // Sync local toggle state once the real profile (with saved preferences)
+  // loads in — the store starts with a fallback profile before that.
+  useEffect(() => {
+    if (user?.notification_preferences) {
+      setNotifications(user.notification_preferences);
+    }
+  }, [user?.notification_preferences]);
 
   const isAdmin = members.find((m) => m.user_id === user?.id)?.role === 'admin';
 
@@ -378,10 +391,22 @@ export default function Settings() {
                         </p>
                       </div>
                       <Switch
-                        checked={notifications[item.key as keyof typeof notifications]}
-                        onCheckedChange={(checked) =>
-                          setNotifications((prev) => ({ ...prev, [item.key]: checked }))
-                        }
+                        checked={notifications[item.key as keyof NotificationPreferences]}
+                        disabled={updateProfile.isPending}
+                        onCheckedChange={(checked) => {
+                          const updated = { ...notifications, [item.key]: checked };
+                          setNotifications(updated);
+                          updateProfile.mutate(
+                            { notification_preferences: updated },
+                            {
+                              onSuccess: (profile) => updateUser({ notification_preferences: profile.notification_preferences }),
+                              onError: (error) => {
+                                setNotifications(notifications);
+                                toast.error(error instanceof Error ? error.message : 'Failed to update preference');
+                              },
+                            }
+                          );
+                        }}
                         className="data-[state=checked]:bg-homesync-olive"
                       />
                     </div>

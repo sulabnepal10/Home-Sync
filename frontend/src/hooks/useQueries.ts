@@ -12,6 +12,7 @@ import type {
   Profile,
   Household,
   HouseholdMember,
+  NotificationPreferences,
 } from '@/types';
 
 // ============ Profile API ============
@@ -30,8 +31,11 @@ export function useUpdateProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { full_name?: string; avatar_url?: string }) =>
-      api.put<Profile>('/api/profile', data),
+    mutationFn: (data: {
+      full_name?: string;
+      avatar_url?: string;
+      notification_preferences?: NotificationPreferences;
+    }) => api.put<Profile>('/api/profile', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
