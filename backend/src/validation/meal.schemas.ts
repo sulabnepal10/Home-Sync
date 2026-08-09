@@ -10,6 +10,7 @@ export const createMealSchema = z.object({
   notes: z.string().optional(),
   attendees: z.array(uuidSchema).optional(),
   meal_time: mealTimeEnum.optional(),
+  poll_group_id: uuidSchema.optional(),
 });
 
 export const updateMealSchema = z.object({

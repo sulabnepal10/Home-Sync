@@ -7,6 +7,7 @@ import {
   deleteMeal,
   joinMeal,
   leaveMeal,
+  voteMeal,
 } from '../controllers/mealController';
 import { requireAuth } from '../middleware/requireAuth';
 import { validateBody, validateQuery } from '../middleware/validate';
@@ -37,5 +38,8 @@ router.post('/:id/join', joinMeal);
 
 // POST /api/meals/:id/leave - Leave a meal
 router.post('/:id/leave', leaveMeal);
+
+// POST /api/meals/:id/vote - Toggle your vote on a meal (poll candidates)
+router.post('/:id/vote', voteMeal);
 
 export default router;
