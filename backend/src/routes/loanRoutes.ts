@@ -9,6 +9,8 @@ import {
   getLoanBalances,
 } from '../controllers/loanController';
 import { requireAuth } from '../middleware/requireAuth';
+import { validateBody, validateQuery } from '../middleware/validate';
+import { createLoanSchema, loanQuerySchema, updateLoanSchema } from '../validation/loan.schemas';
 
 const router: Router = Router();
 
@@ -19,16 +21,16 @@ router.use(requireAuth);
 router.get('/balances', getLoanBalances);
 
 // GET /api/loans - Get all loans for household
-router.get('/', getLoans);
+router.get('/', validateQuery(loanQuerySchema), getLoans);
 
 // POST /api/loans - Create a new loan
-router.post('/', createLoan);
+router.post('/', validateBody(createLoanSchema), createLoan);
 
 // GET /api/loans/:id - Get a single loan
 router.get('/:id', getLoan);
 
 // PUT /api/loans/:id - Update a loan
-router.put('/:id', updateLoan);
+router.put('/:id', validateBody(updateLoanSchema), updateLoan);
 
 // POST /api/loans/:id/settle - Settle a loan
 router.post('/:id/settle', settleLoan);

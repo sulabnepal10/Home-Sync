@@ -252,6 +252,10 @@ export const getChoreAssignments = asyncHandler(
     }
 
     const { start_date, end_date, chore_id } = req.query;
+    // Supports both GET /api/chores/:choreId/assignments and
+    // GET /api/chore-assignments?chore_id=... — the path param takes
+    // precedence when both routes could apply.
+    const choreIdFilter = req.params.choreId || chore_id;
     const supabase = getSupabaseAdmin();
 
     // Get user's household
@@ -278,8 +282,8 @@ export const getChoreAssignments = asyncHandler(
     if (end_date) {
       query = query.lte('assigned_date', end_date);
     }
-    if (chore_id) {
-      query = query.eq('chore_id', chore_id);
+    if (choreIdFilter) {
+      query = query.eq('chore_id', choreIdFilter);
     }
 
     query = query.order('assigned_date', { ascending: true });

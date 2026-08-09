@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import config from './config';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { globalLimiter } from './middleware/rateLimiter';
 
 // Import routes
 import profileRoutes from './routes/profileRoutes';
@@ -17,6 +19,13 @@ import activityRoutes from './routes/activityRoutes'
 const app = express();
 
 // ============ Middleware ============
+
+// Security headers
+app.use(helmet());
+
+// Global rate limit (applied before body parsing so oversized/abusive
+// request floods are rejected as cheaply as possible)
+app.use(globalLimiter);
 
 // CORS configuration
 const allowedOrigins = [
