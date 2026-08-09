@@ -175,7 +175,7 @@ export default function Meals() {
               <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
                 <ChefHat className="w-6 h-6" />
               </div>
-              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Your Turn</p>
+              <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">Your Turn</p>
               <p className="font-display text-4xl font-bold">Tomorrow</p>
             </CardContent>
           </Card>
@@ -186,7 +186,7 @@ export default function Meals() {
               <div className="w-12 h-12 border-2 border-white/30 flex items-center justify-center mb-8">
                 <UtensilsCrossed className="w-6 h-6" />
               </div>
-              <p className="font-mono text-xs tracking-widest uppercase text-white/70 mb-2">Today's Meals</p>
+              <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">Today's Meals</p>
               <p className="font-display text-4xl font-bold">{todayMeals.length}</p>
             </CardContent>
           </Card>
@@ -197,7 +197,7 @@ export default function Meals() {
               <div className="w-12 h-12 border-2 border-white/20 flex items-center justify-center mb-8">
                 <Users className="w-6 h-6" />
               </div>
-              <p className="font-mono text-xs tracking-widest uppercase text-white/50 mb-2">This Week</p>
+              <p className="font-mono text-xs tracking-widest uppercase text-white mb-2">This Week</p>
               <p className="font-display text-4xl font-bold">{upcomingMeals.length}</p>
             </CardContent>
           </Card>
@@ -268,7 +268,7 @@ export default function Meals() {
                           isCurrentDay ? 'bg-homesync-rust text-white border-homesync-rust' : 'text-homesync-ink bg-homesync-tan'
                         )}
                       >
-                        <p className={cn("font-mono text-[10px] uppercase tracking-widest mb-1", isCurrentDay ? 'text-white/80' : 'text-homesync-muted')}>
+                        <p className={cn("font-mono text-[10px] uppercase tracking-widest mb-1", isCurrentDay ? 'text-white' : 'text-homesync-muted')}>
                           {format(day, 'EEE')}
                         </p>
                         <p className="font-display text-2xl font-bold">
