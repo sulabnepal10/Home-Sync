@@ -231,17 +231,23 @@ export function useLoans(params?: { status?: 'all' | 'settled' | 'pending' }) {
   });
 }
 
+export interface Settlement {
+  from: string;
+  to: string;
+  amount: number;
+}
+
+export interface LoanBalances {
+  balances: Record<string, { owed: number; lent: number; net: number }>;
+  settlements: Settlement[];
+}
+
 export function useLoanBalances() {
   const { household } = useAuthStore();
 
   return useQuery({
     queryKey: ['loan-balances', household?.id],
-    queryFn: async () => {
-      const balances = await api.get<Record<string, { owed: number; lent: number; net: number }>>(
-        '/api/loans/balances'
-      );
-      return balances;
-    },
+    queryFn: () => api.get<LoanBalances>('/api/loans/balances'),
     enabled: !!household,
   });
 }

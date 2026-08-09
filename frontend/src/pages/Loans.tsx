@@ -47,8 +47,6 @@ import {
   useDeleteLoan
 } from '@/hooks/useQueries';
 
-type BalanceRecord = Record<string, { owed: number; lent: number; net: number }>;
-
 /* ─── Fonts & Brand ─── */
 function useFonts() {
   useEffect(() => {
@@ -204,8 +202,7 @@ export default function Loans() {
             <CardContent className="p-0 flex-1 bg-white">
               <div className="divide-y-2 divide-homesync-sand">
                 {members.map((member) => {
-                  const balanceRecord = balances as BalanceRecord | undefined;
-                  const balance = balanceRecord?.[member.user_id] || { owed: 0, lent: 0, net: 0 };
+                  const balance = balances?.balances?.[member.user_id] || { owed: 0, lent: 0, net: 0 };
                   return (
                     <div key={member.id} className="flex items-center gap-4 p-5 hover:bg-homesync-cream transition-colors">
                       <Avatar className="w-10 h-10 rounded-none border-2 border-homesync-ink">
@@ -251,29 +248,11 @@ export default function Loans() {
             <CardContent className="p-0 flex-1 bg-white">
               <div className="divide-y-2 divide-homesync-sand h-full">
                 {(() => {
-                  const suggestions: { from: string; to: string; amount: number }[] = [];
-                  const balanceRecord = balances as BalanceRecord | undefined;
-                  const memberBalances = members.map((m) => ({
-                    id: m.user_id,
-                    name: m.profile?.full_name || '',
-                    balance: balanceRecord?.[m.user_id]?.net || 0,
-                  }));
-
-                  const debtors = memberBalances.filter((m) => m.balance < 0).sort((a, b) => a.balance - b.balance);
-                  const creditors = memberBalances.filter((m) => m.balance > 0).sort((a, b) => b.balance - a.balance);
-
-                  debtors.forEach((debtor) => {
-                    creditors.forEach((creditor) => {
-                      if (debtor.balance < 0 && creditor.balance > 0) {
-                        const amount = Math.min(-debtor.balance, creditor.balance);
-                        if (amount > 0.01) {
-                          suggestions.push({ from: debtor.id, to: creditor.id, amount });
-                          debtor.balance += amount;
-                          creditor.balance -= amount;
-                        }
-                      }
-                    });
-                  });
+                  // Settlements are computed server-side (balanceService.simplifyDebts)
+                  // from BOTH loans and expense splits merged into one graph, so a
+                  // debt chain spanning both collapses into a single suggestion here
+                  // instead of being recomputed (loans-only) on the client.
+                  const suggestions = balances?.settlements || [];
 
                   return suggestions.length > 0 ? suggestions.map((s, i) => {
                     const debtor = members.find((m) => m.user_id === s.from);
