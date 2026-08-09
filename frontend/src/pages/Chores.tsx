@@ -191,7 +191,7 @@ export default function Chores() {
             variant="ghost"
             size="icon"
             onClick={() => setSelectedWeek(addDays(selectedWeek, -7))}
-            className="rounded-none hover:bg-white text-homesync-ink"
+            className="rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
@@ -202,7 +202,7 @@ export default function Chores() {
             variant="ghost"
             size="icon"
             onClick={() => setSelectedWeek(addDays(selectedWeek, 7))}
-            className="rounded-none hover:bg-white text-homesync-ink"
+            className="rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink"
           >
             <ChevronRight className="w-5 h-5" />
           </Button>
@@ -215,7 +215,7 @@ export default function Chores() {
           transition={{ delay: 0.4 }}
           className="mb-12 overflow-x-auto"
         >
-          <Card className="min-w-[800px] rounded-none border-2 border-homesync-sand bg-white shadow-none">
+          <Card className="min-w-[800px] rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan shadow-none">
             <CardContent className="p-0">
               <div className="grid grid-cols-7 divide-x-2 divide-homesync-sand">
                 {weekDays.map((day) => {
@@ -255,7 +255,7 @@ export default function Chores() {
                                 'p-3 border-2 text-sm transition-all rounded-none',
                                 assignment.completed_at
                                   ? 'border-homesync-olive bg-homesync-tan text-homesync-olive'
-                                  : 'border-homesync-ink bg-white text-homesync-ink'
+                                  : 'border-homesync-ink bg-white dark:bg-homesync-tan text-homesync-ink'
                               )}
                             >
                               <p className={cn(
@@ -304,7 +304,7 @@ export default function Chores() {
                 Today's Ledger
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0 bg-white">
+            <CardContent className="p-0 bg-white dark:bg-homesync-tan">
               <div className="divide-y-2 divide-homesync-sand">
                 {(() => {
                   if (isLoading) {
@@ -331,10 +331,10 @@ export default function Chores() {
                   return todayChores.map((assignment) => (
                     <motion.div
                       key={assignment.id}
-                      whileHover={{ backgroundColor: '#F5F0E8' }}
+                      whileHover={{ backgroundColor: 'hsl(var(--hs-cream))' }}
                       className={cn(
                         'flex flex-col sm:flex-row sm:items-center gap-4 p-5 transition-colors',
-                        assignment.completed_at ? 'bg-homesync-tan/50' : 'bg-white'
+                        assignment.completed_at ? 'bg-homesync-tan/50' : 'bg-white dark:bg-homesync-tan'
                       )}
                     >
                       <div className={cn(
@@ -437,7 +437,7 @@ export default function Chores() {
                   placeholder="e.g., Take out the trash"
                   value={choreName}
                   onChange={(e) => setChoreName(e.target.value)}
-                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
+                  className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
                 />
               </div>
 
@@ -449,7 +449,7 @@ export default function Chores() {
                     min="0"
                     value={chorePoints}
                     onChange={(e) => setChorePoints(e.target.value)}
-                    className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-base"
+                    className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-base"
                   />
                 </div>
                 <div className="space-y-3">
@@ -458,7 +458,7 @@ export default function Chores() {
                     type="date"
                     value={assignedDate}
                     onChange={(e) => setAssignedDate(e.target.value)}
-                    className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-xs uppercase"
+                    className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-xs uppercase"
                   />
                 </div>
               </div>
@@ -466,7 +466,7 @@ export default function Chores() {
               <div className="space-y-3">
                 <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Assign To</Label>
                 <Select value={assignedUserId} onValueChange={setAssignedUserId}>
-                  <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-body text-base">
+                  <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus:ring-0 focus:border-homesync-ink h-12 font-body text-base">
                     <SelectValue placeholder="Select member" />
                   </SelectTrigger>
                   <SelectContent className="rounded-none border-2 border-homesync-ink bg-homesync-cream font-body">

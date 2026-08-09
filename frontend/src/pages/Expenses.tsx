@@ -288,7 +288,7 @@ export default function Expenses() {
           transition={{ delay: 0.3 }}
           className="mb-12"
         >
-          <Card className="rounded-none border-2 border-homesync-sand bg-white shadow-none">
+          <Card className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan shadow-none">
             <CardHeader className="border-b-2 border-homesync-sand pb-6">
               <CardTitle className="font-display text-2xl font-bold text-homesync-ink">
                 Spending Timeline
@@ -301,28 +301,28 @@ export default function Expenses() {
                     <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorAmount2" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#C84B31" stopOpacity={0.2} />
-                          <stop offset="95%" stopColor="#C84B31" stopOpacity={0} />
+                          <stop offset="5%" stopColor="hsl(var(--hs-rust))" stopOpacity={0.2} />
+                          <stop offset="95%" stopColor="hsl(var(--hs-rust))" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E8DFD0" vertical={false} />
-                      <XAxis dataKey="name" stroke="#7A6755" fontSize={12} fontFamily="var(--ff-mono)" tickLine={false} axisLine={false} dy={10} />
-                      <YAxis stroke="#7A6755" fontSize={12} fontFamily="var(--ff-mono)" tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--hs-tan))" vertical={false} />
+                      <XAxis dataKey="name" stroke="hsl(var(--hs-muted))" fontSize={12} fontFamily="var(--ff-mono)" tickLine={false} axisLine={false} dy={10} />
+                      <YAxis stroke="hsl(var(--hs-muted))" fontSize={12} fontFamily="var(--ff-mono)" tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#F5F0E8',
-                          border: '2px solid #1A1209',
+                          backgroundColor: 'hsl(var(--hs-cream))',
+                          border: '2px solid hsl(var(--hs-ink))',
                           borderRadius: '0',
                           fontFamily: 'var(--ff-mono)',
                           fontSize: '12px',
                           textTransform: 'uppercase'
                         }}
-                        itemStyle={{ color: '#1A1209', fontWeight: 'bold' }}
+                        itemStyle={{ color: 'hsl(var(--hs-ink))', fontWeight: 'bold' }}
                       />
                       <Area
                         type="step"
                         dataKey="amount"
-                        stroke="#C84B31"
+                        stroke="hsl(var(--hs-rust))"
                         strokeWidth={2}
                         fillOpacity={1}
                         fill="url(#colorAmount2)"
@@ -352,11 +352,11 @@ export default function Expenses() {
               placeholder="Search expenses..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body text-base h-12"
+              className="pl-12 rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-body text-base h-12"
             />
           </div>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full sm:w-64 rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-mono text-xs uppercase tracking-widest">
+            <SelectTrigger className="w-full sm:w-64 rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus:ring-0 focus:border-homesync-ink h-12 font-mono text-xs uppercase tracking-widest">
               <div className="flex items-center">
                 <Filter className="w-4 h-4 mr-3 text-homesync-muted" />
                 <SelectValue placeholder="All Categories" />
@@ -386,7 +386,7 @@ export default function Expenses() {
               ) : isError ? (
                 <ErrorState message="Failed to load expenses. Please try again." />
               ) : filteredExpenses.length > 0 ? (
-                <div className="divide-y-2 divide-homesync-sand bg-white">
+                <div className="divide-y-2 divide-homesync-sand bg-white dark:bg-homesync-tan">
                   {filteredExpenses.map((expense, index) => (
                     <motion.div
                       key={expense.id}
@@ -447,7 +447,7 @@ export default function Expenses() {
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-homesync-muted bg-white border-2 border-dashed border-homesync-sand m-4">
+                <div className="flex flex-col items-center justify-center py-20 text-homesync-muted bg-white dark:bg-homesync-tan border-2 border-dashed border-homesync-sand m-4">
                   <Wallet className="w-12 h-12 mb-4 text-homesync-sand opacity-50" />
                   <p className="font-display text-2xl font-bold text-homesync-ink mb-2">
                     No records found
@@ -488,7 +488,7 @@ export default function Expenses() {
                     placeholder="0.00"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="pl-8 rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-mono text-lg h-12"
+                    className="pl-8 rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-mono text-lg h-12"
                   />
                 </div>
               </div>
@@ -500,14 +500,14 @@ export default function Expenses() {
                   placeholder="What was this expense for?"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12"
+                  className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12"
                 />
               </div>
 
               <div className="space-y-3">
                 <Label htmlFor="category" className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Category</Label>
                 <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-body">
+                  <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus:ring-0 focus:border-homesync-ink h-12 font-body">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent className="rounded-none border-2 border-homesync-ink bg-homesync-cream font-body">
@@ -552,7 +552,7 @@ export default function Expenses() {
                       {members.map((member) => (
                         <label
                           key={member.user_id}
-                          className="flex items-center gap-3 bg-white border border-homesync-sand p-3 cursor-pointer"
+                          className="flex items-center gap-3 bg-white dark:bg-homesync-tan border border-homesync-sand p-3 cursor-pointer"
                         >
                           <Checkbox
                             checked={equalSplitMembers.includes(member.user_id)}
@@ -571,7 +571,7 @@ export default function Expenses() {
                         </label>
                       ))}
                     </div>
-                    <div className="bg-white border-2 border-homesync-sand p-4 text-sm font-mono text-homesync-muted">
+                    <div className="bg-white dark:bg-homesync-tan border-2 border-homesync-sand p-4 text-sm font-mono text-homesync-muted">
                       Splitting equally among {equalSplitMembers.length} of {members.length} members.
                       <br />
                       <span className="text-homesync-ink font-bold mt-2 inline-block">
@@ -583,7 +583,7 @@ export default function Expenses() {
 
                   <TabsContent value="percentage" className="pt-4 space-y-3 max-h-[240px] overflow-y-auto pr-2">
                     {members.map((member) => (
-                      <div key={member.user_id} className="flex items-center gap-3 bg-white border border-homesync-sand p-3">
+                      <div key={member.user_id} className="flex items-center gap-3 bg-white dark:bg-homesync-tan border border-homesync-sand p-3">
                         <Avatar className="w-8 h-8 rounded-none border border-homesync-ink">
                           <AvatarImage src={member.profile?.avatar_url} className="rounded-none" />
                           <AvatarFallback className="text-[10px] font-mono rounded-none bg-homesync-tan text-homesync-ink">
@@ -618,7 +618,7 @@ export default function Expenses() {
 
                   <TabsContent value="custom" className="pt-4 space-y-3 max-h-[200px] overflow-y-auto pr-2">
                     {members.map((member) => (
-                      <div key={member.user_id} className="flex items-center gap-3 bg-white border border-homesync-sand p-3">
+                      <div key={member.user_id} className="flex items-center gap-3 bg-white dark:bg-homesync-tan border border-homesync-sand p-3">
                         <Avatar className="w-8 h-8 rounded-none border border-homesync-ink">
                           <AvatarImage src={member.profile?.avatar_url} className="rounded-none" />
                           <AvatarFallback className="text-[10px] font-mono rounded-none bg-homesync-tan text-homesync-ink">

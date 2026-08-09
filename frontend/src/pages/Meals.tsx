@@ -231,7 +231,7 @@ export default function Meals() {
             variant="ghost"
             size="icon"
             onClick={() => setSelectedWeek(addDays(selectedWeek, -7))}
-            className="rounded-none hover:bg-white text-homesync-ink"
+            className="rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
@@ -242,7 +242,7 @@ export default function Meals() {
             variant="ghost"
             size="icon"
             onClick={() => setSelectedWeek(addDays(selectedWeek, 7))}
-            className="rounded-none hover:bg-white text-homesync-ink"
+            className="rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink"
           >
             <ChevronRight className="w-5 h-5" />
           </Button>
@@ -255,7 +255,7 @@ export default function Meals() {
           transition={{ delay: 0.4 }}
           className="mb-12 overflow-x-auto"
         >
-          <Card className="min-w-[800px] rounded-none border-2 border-homesync-sand bg-white shadow-none">
+          <Card className="min-w-[800px] rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan shadow-none">
             <CardContent className="p-0">
               {isLoading ? (
                 <LoadingState label="Loading meals..." />
@@ -294,7 +294,7 @@ export default function Meals() {
                         {dayMeals.length > 0 ? (
                           groupMealsForDay(dayMeals).map(({ key, options }) =>
                             options.length > 1 ? (
-                              <div key={key} className="border-2 border-homesync-rust bg-white text-sm rounded-none">
+                              <div key={key} className="border-2 border-homesync-rust bg-white dark:bg-homesync-tan text-sm rounded-none">
                                 <div className="flex items-center gap-1 px-3 pt-2 text-[9px] font-mono uppercase tracking-widest text-homesync-rust">
                                   <Vote className="w-3 h-3" />
                                   Vote
@@ -326,7 +326,7 @@ export default function Meals() {
                               <motion.div
                                 key={key}
                                 whileHover={{ scale: 1.02 }}
-                                className="p-3 border-2 border-homesync-ink bg-white text-homesync-ink text-sm transition-all rounded-none"
+                                className="p-3 border-2 border-homesync-ink bg-white dark:bg-homesync-tan text-homesync-ink text-sm transition-all rounded-none"
                               >
                                 <div className="flex items-center gap-2 text-homesync-muted mb-2">
                                   <ChefHat className="w-3 h-3 text-homesync-rust" />
@@ -374,7 +374,7 @@ export default function Meals() {
                   Today's Menu
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 bg-white">
+              <CardContent className="p-6 bg-white dark:bg-homesync-tan">
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {todayMeals.map((meal) => (
                     <motion.div
@@ -480,7 +480,7 @@ export default function Meals() {
           transition={{ delay: 0.6 }}
           className="pb-12"
         >
-          <Card className="rounded-none border-2 border-homesync-sand bg-white shadow-none">
+          <Card className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan shadow-none">
             <CardHeader className="border-b-2 border-homesync-sand pb-6">
               <CardTitle className="font-display text-2xl font-bold text-homesync-ink flex items-center gap-3">
                 <RotateCcw className="w-6 h-6 text-homesync-ink" />
@@ -546,7 +546,7 @@ export default function Meals() {
                   "w-full flex items-center justify-between p-3 border-2 font-mono text-[10px] uppercase tracking-widest transition-colors",
                   isPollMode
                     ? "border-homesync-rust bg-homesync-rust/10 text-homesync-rust"
-                    : "border-homesync-sand bg-white text-homesync-muted hover:border-homesync-ink"
+                    : "border-homesync-sand bg-white dark:bg-homesync-tan text-homesync-muted hover:border-homesync-ink"
                 )}
               >
                 <span>Can't decide? Propose a few options to vote on</span>
@@ -564,7 +564,7 @@ export default function Meals() {
                       onChange={(e) =>
                         setPollOptions((prev) => prev.map((o, idx) => (idx === i ? e.target.value : o)))
                       }
-                      className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
+                      className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
                     />
                   ))}
                 </div>
@@ -576,7 +576,7 @@ export default function Meals() {
                     placeholder="What's on the menu?"
                     value={mealName}
                     onChange={(e) => setMealName(e.target.value)}
-                    className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
+                    className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
                   />
                   <div className="flex flex-wrap gap-2 pt-2">
                     {mealIdeas.slice(0, 4).map((idea) => (
@@ -585,7 +585,7 @@ export default function Meals() {
                         variant="outline"
                         size="sm"
                         onClick={() => setMealName(idea)}
-                        className="rounded-none border-2 border-homesync-sand bg-white hover:bg-homesync-tan hover:border-homesync-ink text-homesync-ink font-mono text-[9px] uppercase tracking-widest h-8"
+                        className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan hover:bg-homesync-tan hover:border-homesync-ink text-homesync-ink font-mono text-[9px] uppercase tracking-widest h-8"
                       >
                         {idea}
                       </Button>
@@ -601,13 +601,13 @@ export default function Meals() {
                     type="date"
                     value={mealDate}
                     onChange={(e) => setMealDate(e.target.value)}
-                    className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-xs uppercase"
+                    className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-xs uppercase"
                   />
                 </div>
                 <div className="space-y-3">
                   <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Time</Label>
                   <Select value={mealTime} onValueChange={setMealTime}>
-                    <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-body text-base">
+                    <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus:ring-0 focus:border-homesync-ink h-12 font-body text-base">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-none border-2 border-homesync-ink bg-homesync-cream font-body">
@@ -628,7 +628,7 @@ export default function Meals() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
-                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body resize-none p-3"
+                  className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-body resize-none p-3"
                 />
               </div>
 
@@ -653,7 +653,7 @@ export default function Meals() {
                           "rounded-none border-2 font-mono text-[10px] uppercase tracking-widest h-9",
                           isSelected
                             ? "bg-homesync-ink border-homesync-ink text-white hover:bg-homesync-bark hover:text-white"
-                            : "bg-white border-homesync-sand text-homesync-ink hover:bg-homesync-tan hover:border-homesync-ink"
+                            : "bg-white dark:bg-homesync-tan border-homesync-sand text-homesync-ink hover:bg-homesync-tan hover:border-homesync-ink"
                         )}
                       >
                         {member.profile?.full_name}

@@ -194,7 +194,7 @@ export default function Inventory() {
             className="mb-12"
           >
             <Card className="rounded-none border-2 border-homesync-rust bg-homesync-tan shadow-none">
-              <CardHeader className="pb-4 border-b-2 border-homesync-rust bg-white">
+              <CardHeader className="pb-4 border-b-2 border-homesync-rust bg-white dark:bg-homesync-tan">
                 <CardTitle className="font-display text-2xl font-bold text-homesync-rust flex items-center gap-3">
                   <AlertTriangle className="w-6 h-6" />
                   Restock Needed
@@ -207,7 +207,7 @@ export default function Inventory() {
                       key={item.id}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-center gap-3 px-4 py-3 bg-white border-2 border-homesync-rust"
+                      className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-homesync-tan border-2 border-homesync-rust"
                     >
                       <Package className="w-4 h-4 text-homesync-rust" />
                       <span className="font-bold font-body text-homesync-ink">
@@ -237,11 +237,11 @@ export default function Inventory() {
               placeholder="Search items..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body text-base h-12"
+              className="pl-12 rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-body text-base h-12"
             />
           </div>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full sm:w-64 rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-mono text-xs uppercase tracking-widest">
+            <SelectTrigger className="w-full sm:w-64 rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus:ring-0 focus:border-homesync-ink h-12 font-mono text-xs uppercase tracking-widest">
               <div className="flex items-center">
                 <Filter className="w-4 h-4 mr-3 text-homesync-muted" />
                 <SelectValue placeholder="All Categories" />
@@ -286,7 +286,7 @@ export default function Inventory() {
                     {categoryInfo.label}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 bg-white">
+                <CardContent className="p-6 bg-white dark:bg-homesync-tan">
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {items.map((item, index) => {
                       const isLowStock = item.quantity <= item.min_quantity;
@@ -328,7 +328,7 @@ export default function Inventory() {
                           </div>
 
                           {/* Flat Brutalist Progress Bar */}
-                          <div className="w-full h-2 bg-white border border-homesync-sand mb-4 flex-shrink-0">
+                          <div className="w-full h-2 bg-white dark:bg-homesync-tan border border-homesync-sand mb-4 flex-shrink-0">
                             <div
                               className={cn(
                                 "h-full transition-all duration-300",
@@ -411,7 +411,7 @@ export default function Inventory() {
           })}
 
           {filteredItems.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-homesync-muted bg-white border-2 border-dashed border-homesync-sand m-4">
+            <div className="flex flex-col items-center justify-center py-20 text-homesync-muted bg-white dark:bg-homesync-tan border-2 border-dashed border-homesync-sand m-4">
               <Package className="w-12 h-12 mb-4 text-homesync-sand opacity-50" />
               <p className="font-display text-2xl font-bold text-homesync-ink mb-2">
                 No items found
@@ -443,7 +443,7 @@ export default function Inventory() {
                   placeholder="e.g., Milk, Paper Towels"
                   value={itemName}
                   onChange={(e) => setItemName(e.target.value)}
-                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
+                  className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
                 />
               </div>
 
@@ -451,7 +451,7 @@ export default function Inventory() {
                 <div className="space-y-3">
                   <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Category</Label>
                   <Select value={itemCategory} onValueChange={setItemCategory}>
-                    <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-body text-base">
+                    <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus:ring-0 focus:border-homesync-ink h-12 font-body text-base">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-none border-2 border-homesync-ink bg-homesync-cream font-body">
@@ -466,7 +466,7 @@ export default function Inventory() {
                 <div className="space-y-3">
                   <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Unit</Label>
                   <Select value={itemUnit} onValueChange={setItemUnit}>
-                    <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-body text-base">
+                    <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus:ring-0 focus:border-homesync-ink h-12 font-body text-base">
                       <SelectValue placeholder="Select unit" />
                     </SelectTrigger>
                     <SelectContent className="rounded-none border-2 border-homesync-ink bg-homesync-cream font-body">
@@ -488,7 +488,7 @@ export default function Inventory() {
                     placeholder="0"
                     value={itemQuantity}
                     onChange={(e) => setItemQuantity(e.target.value)}
-                    className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-base"
+                    className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-base"
                   />
                 </div>
                 <div className="space-y-3">
@@ -498,7 +498,7 @@ export default function Inventory() {
                     placeholder="1"
                     value={itemMinQuantity}
                     onChange={(e) => setItemMinQuantity(e.target.value)}
-                    className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-base"
+                    className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-mono h-12 text-base"
                   />
                 </div>
               </div>

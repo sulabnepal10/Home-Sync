@@ -150,7 +150,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 </div>
                 <span className="font-display font-black text-xl text-homesync-ink uppercase tracking-tight">HomeSync</span>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} className="rounded-none hover:bg-white text-homesync-ink border-2 border-transparent hover:border-homesync-ink">
+              <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} className="rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink border-2 border-transparent hover:border-homesync-ink">
                 <X className="w-5 h-5" />
               </Button>
             </div>
@@ -166,7 +166,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                         'flex items-center gap-4 px-6 py-4 font-mono text-xs uppercase tracking-widest transition-colors border-l-4',
                         isActive
                           ? 'bg-homesync-tan border-homesync-rust text-homesync-ink font-bold'
-                          : 'border-transparent text-homesync-muted hover:bg-white hover:text-homesync-ink hover:border-homesync-sand'
+                          : 'border-transparent text-homesync-muted hover:bg-white dark:hover:bg-homesync-tan hover:text-homesync-ink hover:border-homesync-sand'
                       )
                     }
                   >
@@ -217,7 +217,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hidden lg:flex rounded-none hover:bg-white text-homesync-ink absolute right-2"
+            className="hidden lg:flex rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink absolute right-2"
           >
             <ChevronDown
               className={cn('w-4 h-4 transition-transform', sidebarOpen ? 'rotate-90' : '-rotate-90')}
@@ -226,7 +226,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         {household && (
-          <div className={cn("py-4 border-b-2 border-homesync-sand bg-white transition-all", sidebarOpen ? "px-6" : "px-0 text-center")}>
+          <div className={cn("py-4 border-b-2 border-homesync-sand bg-white dark:bg-homesync-tan transition-all", sidebarOpen ? "px-6" : "px-0 text-center")}>
             {sidebarOpen ? (
               <>
                 <p className="font-mono text-[9px] uppercase tracking-widest text-homesync-muted mb-1">Household</p>
@@ -257,7 +257,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     sidebarOpen ? 'px-6' : 'px-0 justify-center',
                     isActive
                       ? 'bg-homesync-tan border-homesync-rust text-homesync-ink font-bold'
-                      : 'border-transparent text-homesync-muted hover:bg-white hover:text-homesync-ink hover:border-homesync-sand'
+                      : 'border-transparent text-homesync-muted hover:bg-white dark:hover:bg-homesync-tan hover:text-homesync-ink hover:border-homesync-sand'
                   )
                 }
               >
@@ -279,7 +279,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </nav>
         </ScrollArea>
 
-        <div className="p-4 border-t-2 border-homesync-sand bg-white">
+        <div className="p-4 border-t-2 border-homesync-sand bg-white dark:bg-homesync-tan">
           <button
             onClick={() => setCommandOpen(true)}
             className={cn(
@@ -301,7 +301,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               )}
             </AnimatePresence>
             {sidebarOpen && (
-              <kbd className="hidden sm:inline-flex h-5 items-center gap-0.5 border-2 border-homesync-sand bg-white px-1.5 font-mono text-[9px] font-bold text-homesync-ink rounded-none">
+              <kbd className="hidden sm:inline-flex h-5 items-center gap-0.5 border-2 border-homesync-sand bg-white dark:bg-homesync-tan px-1.5 font-mono text-[9px] font-bold text-homesync-ink rounded-none">
                 <span className="text-[9px]">Ctrl</span>K
               </kbd>
             )}
@@ -312,7 +312,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className={cn(
-                "flex items-center gap-3 w-full border-2 border-transparent hover:bg-white transition-colors p-2 rounded-none",
+                "flex items-center gap-3 w-full border-2 border-transparent hover:bg-white dark:hover:bg-homesync-tan transition-colors p-2 rounded-none",
                 !sidebarOpen && "justify-center"
               )}>
                 <Avatar className="w-10 h-10 rounded-none border-2 border-homesync-ink flex-shrink-0">
@@ -346,7 +346,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   {user?.full_name}
                 </p>
               </div>
-              <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="rounded-none p-3 focus:bg-white cursor-pointer">
+              <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="rounded-none p-3 focus:bg-white dark:focus:bg-homesync-tan cursor-pointer">
                 {theme === 'dark' ? (
                   <>
                     <Sun className="w-4 h-4 mr-3" />
@@ -359,7 +359,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   </>
                 )}
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="rounded-none p-3 focus:bg-white cursor-pointer">
+              <DropdownMenuItem asChild className="rounded-none p-3 focus:bg-white dark:focus:bg-homesync-tan cursor-pointer">
                 <NavLink to="/settings">
                   <Settings className="w-4 h-4 mr-3" />
                   Settings

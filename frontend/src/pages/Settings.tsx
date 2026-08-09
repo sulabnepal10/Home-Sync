@@ -196,7 +196,7 @@ export default function Settings() {
                   Manage your personal information
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-6 bg-white">
+              <CardContent className="p-6 bg-white dark:bg-homesync-tan">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-6">
                   <Avatar className="w-24 h-24 rounded-none border-2 border-homesync-ink flex-shrink-0">
                     <AvatarImage src={user?.avatar_url} className="rounded-none" />
@@ -234,7 +234,7 @@ export default function Settings() {
                   Manage your household settings
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-0 bg-white">
+              <CardContent className="p-0 bg-white dark:bg-homesync-tan">
                 <div className="divide-y-2 divide-homesync-sand">
 
                   <div className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -254,7 +254,7 @@ export default function Settings() {
                   <div className="p-6 bg-homesync-cream">
                     <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold mb-3 block">Invite Code</Label>
                     <div className="flex items-center gap-0">
-                      <code className="flex-1 bg-white border-2 border-r-0 border-homesync-sand p-3 text-lg font-mono font-bold text-homesync-ink h-12 flex items-center">
+                      <code className="flex-1 bg-white dark:bg-homesync-tan border-2 border-r-0 border-homesync-sand p-3 text-lg font-mono font-bold text-homesync-ink h-12 flex items-center">
                         {household?.invite_code}
                       </code>
                       <Button
@@ -283,7 +283,7 @@ export default function Settings() {
                       {members.map((member) => (
                         <div
                           key={member.id}
-                          className="flex items-center gap-4 p-3 border-2 border-homesync-sand bg-white"
+                          className="flex items-center gap-4 p-3 border-2 border-homesync-sand bg-white dark:bg-homesync-tan"
                         >
                           <Avatar className="rounded-none border border-homesync-ink">
                             <AvatarImage src={member.profile?.avatar_url} className="rounded-none" />
@@ -337,7 +337,7 @@ export default function Settings() {
                   Choose how HomeSync looks on this device
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-6 bg-white">
+              <CardContent className="p-6 bg-white dark:bg-homesync-tan">
                 <div className="grid grid-cols-3 gap-3">
                   {themes.map(({ value, label, icon: Icon }) => (
                     <button
@@ -372,7 +372,7 @@ export default function Settings() {
                   Control your alert preferences
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-0 bg-white">
+              <CardContent className="p-0 bg-white dark:bg-homesync-tan">
                 <div className="divide-y-2 divide-homesync-sand">
                   {[
                     { key: 'expenses', label: 'Expense Updates', desc: 'Notified on new shared expenses' },
@@ -419,7 +419,7 @@ export default function Settings() {
           {/* Danger Zone */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
             <Card className="rounded-none border-2 border-homesync-rust bg-homesync-rust/5 shadow-none">
-              <CardHeader className="border-b-2 border-homesync-rust bg-white pb-6">
+              <CardHeader className="border-b-2 border-homesync-rust bg-white dark:bg-homesync-tan pb-6">
                 <CardTitle className="font-display text-2xl font-bold text-homesync-rust flex items-center gap-3">
                   <Shield className="w-6 h-6" />
                   Danger Zone
@@ -428,7 +428,7 @@ export default function Settings() {
                   Irreversible and destructive actions
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-6 bg-white">
+              <CardContent className="p-6 bg-white dark:bg-homesync-tan">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <p className="font-body font-bold text-homesync-ink mb-1">
@@ -445,7 +445,7 @@ export default function Settings() {
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="rounded-none border-2 border-homesync-rust bg-homesync-cream p-0 shadow-[8px_8px_0px_rgba(200,75,49,1)]">
-                      <AlertDialogHeader className="p-6 bg-white border-b-2 border-homesync-rust">
+                      <AlertDialogHeader className="p-6 bg-white dark:bg-homesync-tan border-b-2 border-homesync-rust">
                         <AlertDialogTitle className="font-display text-3xl font-black text-homesync-rust">Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription className="font-body text-homesync-muted mt-2">
                           This action cannot be undone. You will lose access to all household data
@@ -453,7 +453,7 @@ export default function Settings() {
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter className="p-6 bg-homesync-tan border-t-2 border-homesync-rust flex justify-end gap-3 sm:gap-0">
-                        <AlertDialogCancel className="rounded-none border-2 border-homesync-ink bg-transparent text-homesync-ink hover:bg-white font-mono text-xs uppercase tracking-widest px-6">
+                        <AlertDialogCancel className="rounded-none border-2 border-homesync-ink bg-transparent text-homesync-ink hover:bg-white dark:hover:bg-homesync-tan font-mono text-xs uppercase tracking-widest px-6">
                           Cancel
                         </AlertDialogCancel>
                         <AlertDialogAction
@@ -508,7 +508,7 @@ export default function Settings() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Enter your name"
-                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
+                  className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12 text-base"
                 />
               </div>
             </div>

@@ -170,7 +170,7 @@ export default function Loans() {
           {/* Card 3: Net Balance */}
           <Card className={cn(
             'rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand text-white shadow-none hover:bg-homesync-bark transition-colors',
-            netBalance >= 0 ? 'bg-homesync-ink' : 'bg-[#3D2B1F]' // homesync-bark variant if negative
+            netBalance >= 0 ? 'bg-homesync-ink' : 'bg-homesync-bark'
           )}>
             <CardContent className="p-6 sm:p-8">
               <div className="w-12 h-12 border-2 border-white/20 flex items-center justify-center mb-8">
@@ -199,7 +199,7 @@ export default function Loans() {
                 Member Balances
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0 flex-1 bg-white">
+            <CardContent className="p-0 flex-1 bg-white dark:bg-homesync-tan">
               <div className="divide-y-2 divide-homesync-sand">
                 {members.map((member) => {
                   const balance = balances?.balances?.[member.user_id] || { owed: 0, lent: 0, net: 0 };
@@ -245,7 +245,7 @@ export default function Loans() {
                 Action Plan
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0 flex-1 bg-white">
+            <CardContent className="p-0 flex-1 bg-white dark:bg-homesync-tan">
               <div className="divide-y-2 divide-homesync-sand h-full">
                 {(() => {
                   // Settlements are computed server-side (balanceService.simplifyDebts)
@@ -309,11 +309,11 @@ export default function Loans() {
                 placeholder="Search records..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body text-base h-12"
+                className="pl-12 rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-body text-base h-12"
               />
             </div>
             <Select value={filter} onValueChange={(v) => setFilter(v as 'all' | 'settled' | 'pending')}>
-              <SelectTrigger className="w-full sm:w-48 rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-mono text-xs uppercase tracking-widest">
+              <SelectTrigger className="w-full sm:w-48 rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus:ring-0 focus:border-homesync-ink h-12 font-mono text-xs uppercase tracking-widest">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent className="rounded-none border-2 border-homesync-ink font-mono text-xs uppercase tracking-widest bg-homesync-cream">
@@ -331,7 +331,7 @@ export default function Loans() {
               ) : isError ? (
                 <ErrorState message="Failed to load loans. Please try again." />
               ) : filteredLoans.length > 0 ? (
-                <div className="divide-y-2 divide-homesync-sand bg-white">
+                <div className="divide-y-2 divide-homesync-sand bg-white dark:bg-homesync-tan">
                   <AnimatePresence>
                     {filteredLoans.map((loan, index) => (
                       <motion.div
@@ -439,7 +439,7 @@ export default function Loans() {
                   </AnimatePresence>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-homesync-muted bg-white border-2 border-dashed border-homesync-sand m-4">
+                <div className="flex flex-col items-center justify-center py-20 text-homesync-muted bg-white dark:bg-homesync-tan border-2 border-dashed border-homesync-sand m-4">
                   <ArrowLeftRight className="w-12 h-12 mb-4 text-homesync-sand opacity-50" />
                   <p className="font-display text-2xl font-bold text-homesync-ink mb-2">
                     No records found
@@ -475,7 +475,7 @@ export default function Loans() {
                     placeholder="0.00"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="pl-8 rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-mono text-lg h-12"
+                    className="pl-8 rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-mono text-lg h-12"
                   />
                 </div>
               </div>
@@ -487,14 +487,14 @@ export default function Loans() {
                   placeholder="What was this loan for?"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="rounded-none border-2 border-homesync-sand bg-white focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12"
+                  className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus-visible:border-homesync-ink focus-visible:ring-0 font-body h-12"
                 />
               </div>
 
               <div className="space-y-3">
                 <Label className="font-mono text-xs uppercase tracking-widest text-homesync-ink font-bold">Borrower</Label>
                 <Select value={borrowerId} onValueChange={setBorrowerId}>
-                  <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white focus:ring-0 focus:border-homesync-ink h-12 font-body">
+                  <SelectTrigger className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan focus:ring-0 focus:border-homesync-ink h-12 font-body">
                     <SelectValue placeholder="Select borrower" />
                   </SelectTrigger>
                   <SelectContent className="rounded-none border-2 border-homesync-ink bg-homesync-cream font-body">

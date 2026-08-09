@@ -57,7 +57,16 @@ function useFonts() {
 const grainSvg = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E")`;
 
 // Updated to match HomeSync Brand Colors
-const COLORS = ['#C84B31', '#2C6E49', '#1A1209', '#7A6755', '#D4B896', '#3D2B1F'];
+// hsl(var(--hs-*)) rather than literal hex so the pie chart's segment
+// colors follow the theme instead of staying fixed under dark mode.
+const COLORS = [
+  'hsl(var(--hs-rust))',
+  'hsl(var(--hs-olive))',
+  'hsl(var(--hs-ink))',
+  'hsl(var(--hs-muted))',
+  'hsl(var(--hs-sand))',
+  'hsl(var(--hs-bark))',
+];
 
 const container = {
   hidden: { opacity: 0 },
@@ -223,7 +232,7 @@ export default function Dashboard() {
 
           {/* Card 3: Meals */}
           <motion.div variants={item}>
-            <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-white text-homesync-ink shadow-none h-full transition-colors hover:bg-homesync-tan">
+            <Card className="rounded-none border-r-2 border-b-2 border-l-0 border-t-0 border-homesync-sand bg-white dark:bg-homesync-tan text-homesync-ink shadow-none h-full transition-colors hover:bg-homesync-tan">
               <CardContent className="p-6 sm:p-8">
                 <div className="flex items-start justify-between mb-8">
                   <div className="w-12 h-12 border-2 border-homesync-ink flex items-center justify-center">
@@ -275,7 +284,7 @@ export default function Dashboard() {
             transition={{ delay: 0.3 }}
             className="lg:col-span-2"
           >
-            <Card className="rounded-none border-2 border-homesync-sand bg-white shadow-none h-full">
+            <Card className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan shadow-none h-full">
               <CardHeader className="flex flex-row items-center justify-between pb-6 border-b-2 border-homesync-sand">
                 <CardTitle className="font-display text-2xl font-bold text-homesync-ink">
                   Expense Trend
@@ -294,28 +303,28 @@ export default function Dashboard() {
                       <AreaChart data={expenseChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <defs>
                           <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#C84B31" stopOpacity={0.2} />
-                            <stop offset="95%" stopColor="#C84B31" stopOpacity={0} />
+                            <stop offset="5%" stopColor="hsl(var(--hs-rust))" stopOpacity={0.2} />
+                            <stop offset="95%" stopColor="hsl(var(--hs-rust))" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E8DFD0" vertical={false} />
-                        <XAxis dataKey="name" stroke="#7A6755" fontSize={12} fontFamily="var(--ff-mono)" tickLine={false} axisLine={false} dy={10} />
-                        <YAxis stroke="#7A6755" fontSize={12} fontFamily="var(--ff-mono)" tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--hs-tan))" vertical={false} />
+                        <XAxis dataKey="name" stroke="hsl(var(--hs-muted))" fontSize={12} fontFamily="var(--ff-mono)" tickLine={false} axisLine={false} dy={10} />
+                        <YAxis stroke="hsl(var(--hs-muted))" fontSize={12} fontFamily="var(--ff-mono)" tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
                         <Tooltip
                           contentStyle={{
-                            backgroundColor: '#F5F0E8',
-                            border: '2px solid #1A1209',
+                            backgroundColor: 'hsl(var(--hs-cream))',
+                            border: '2px solid hsl(var(--hs-ink))',
                             borderRadius: '0',
                             fontFamily: 'var(--ff-mono)',
                             fontSize: '12px',
                             textTransform: 'uppercase'
                           }}
-                          itemStyle={{ color: '#1A1209', fontWeight: 'bold' }}
+                          itemStyle={{ color: 'hsl(var(--hs-ink))', fontWeight: 'bold' }}
                         />
                         <Area
                           type="step"
                           dataKey="amount"
-                          stroke="#C84B31"
+                          stroke="hsl(var(--hs-rust))"
                           strokeWidth={2}
                           fillOpacity={1}
                           fill="url(#colorAmount)"
@@ -338,7 +347,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <Card className="rounded-none border-2 border-homesync-sand bg-white shadow-none h-full">
+            <Card className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan shadow-none h-full">
               <CardHeader className="pb-6 border-b-2 border-homesync-sand">
                 <CardTitle className="font-display text-2xl font-bold text-homesync-ink">
                   Spending Profile
@@ -365,14 +374,14 @@ export default function Dashboard() {
                         </Pie>
                         <Tooltip
                           contentStyle={{
-                            backgroundColor: '#1A1209',
+                            backgroundColor: 'hsl(var(--hs-ink))',
                             border: 'none',
                             borderRadius: '0',
                             fontFamily: 'var(--ff-mono)',
                             fontSize: '12px',
-                            color: '#F5F0E8'
+                            color: 'hsl(var(--hs-cream))'
                           }}
-                          itemStyle={{ color: '#F5F0E8' }}
+                          itemStyle={{ color: 'hsl(var(--hs-cream))' }}
                         />
                       </PieChart>
                     </ResponsiveContainer>
@@ -427,7 +436,7 @@ export default function Dashboard() {
                     todayChores.map((assignment) => (
                       <div
                         key={assignment.id}
-                        className="flex items-center gap-4 p-5 bg-white transition-colors hover:bg-homesync-cream"
+                        className="flex items-center gap-4 p-5 bg-white dark:bg-homesync-tan transition-colors hover:bg-homesync-cream"
                       >
                         <div
                           className={`w-2 h-12 rounded-none ${assignment.completed_at
@@ -463,7 +472,7 @@ export default function Dashboard() {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-12 font-mono text-sm uppercase tracking-widest text-homesync-muted bg-white">
+                    <div className="text-center py-12 font-mono text-sm uppercase tracking-widest text-homesync-muted bg-white dark:bg-homesync-tan">
                       No chores scheduled for today
                     </div>
                   )}
@@ -486,7 +495,7 @@ export default function Dashboard() {
                 <Activity className="w-5 h-5 text-homesync-rust" />
               </CardHeader>
               <CardContent className="p-0">
-                <div className="divide-y-2 divide-homesync-sand max-h-[350px] overflow-y-auto bg-white">
+                <div className="divide-y-2 divide-homesync-sand max-h-[350px] overflow-y-auto bg-white dark:bg-homesync-tan">
                   {activities && activities.length > 0 ? (
                     activities.slice(0, 6).map((activity) => (
                       <div key={activity.id} className="flex items-start gap-4 p-5">
@@ -525,7 +534,7 @@ export default function Dashboard() {
           transition={{ delay: 0.7 }}
           className="pb-12"
         >
-          <Card className="rounded-none border-2 border-homesync-sand bg-white shadow-none">
+          <Card className="rounded-none border-2 border-homesync-sand bg-white dark:bg-homesync-tan shadow-none">
             <CardHeader className="flex flex-row items-center justify-between pb-6 border-b-2 border-homesync-sand">
               <CardTitle className="font-display text-2xl font-bold text-homesync-ink">
                 Household Roster
