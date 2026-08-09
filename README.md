@@ -5,7 +5,31 @@ Living with roommates often turns into a messy spreadsheet of "who owes who," mi
 
 ---
 
-## ✨ Key Features
+## 📐 System Analysis & Design
+
+Home Sync is documented as two layers: the **analysis** behind why it works the way it does, and the **implementation** below. The analysis layer is grounded directly in this codebase — every requirement, rule, and diagram links to the actual route, controller, or table that implements it, cross-referenced end-to-end in a [requirements traceability matrix](docs/system-analysis/13-traceability-matrix.md).
+
+| Doc | Covers |
+|---|---|
+| [01 — Business Analysis](docs/system-analysis/01-business-analysis.md) | Problem statement, objective, target users |
+| [02 — Stakeholder Analysis](docs/system-analysis/02-stakeholder-analysis.md) | Who uses the system and what they need from it |
+| [03 — Scope](docs/system-analysis/03-scope.md) | What's built vs. deliberately deferred, and why |
+| [04 — Requirements](docs/system-analysis/04-requirements.md) | Functional & non-functional requirements, with IDs |
+| [05 — Use Cases](docs/system-analysis/05-use-cases.md) | Actors, use case diagram, detailed use case specs |
+| [06 — Business Rules](docs/system-analysis/06-business-rules.md) | The actual money-math and scheduling rules, with worked examples |
+| [07 — Process Models](docs/system-analysis/07-process-models.md) | Flow diagrams for expense creation, debt simplification, chore lifecycle, etc. |
+| [08 — Data Model](docs/system-analysis/08-data-model.md) | Why each entity exists, and the real ER diagram |
+| [09 — Security Analysis](docs/system-analysis/09-security-analysis.md) | Two real vulnerabilities found and fixed — requirement → design → implementation |
+| [10 — Architecture](docs/system-analysis/10-architecture.md) | Why a custom backend in front of Supabase, request pipeline, deployment |
+| [11 — Acceptance Criteria](docs/system-analysis/11-acceptance-criteria.md) | Given/When/Then criteria for the requirements above |
+| [12 — Test Scenarios](docs/system-analysis/12-test-scenarios.md) | Manually-verified QA scenarios (automation status noted honestly) |
+| [13 — Traceability Matrix](docs/system-analysis/13-traceability-matrix.md) | Requirement → use case → API → implementation → verification |
+| [14 — Future Requirement: AI Summary](docs/system-analysis/14-future-ai-assistant.md) | A worked example of analyzing a feature before building it |
+| [15 — Future Improvements](docs/system-analysis/15-future-improvements.md) | Scoped next steps, phrased as requirements |
+
+---
+
+## ✨ Key Features (Implementation)
 
 ### 💰 Smart Expense & Debt Management
 * **Intelligent Splitting:** Split expenses equally, by percentage, or by custom amounts (e.g., "Only 2 people ate dinner," "Electricity split by room").
