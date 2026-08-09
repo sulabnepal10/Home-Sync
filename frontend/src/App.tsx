@@ -16,6 +16,8 @@ import Meals from '@/pages/Meals';
 import Inventory from '@/pages/Inventory';
 import Settings from '@/pages/Settings';
 import Onboarding from '@/pages/Onboarding';
+import ResetPassword from '@/pages/ResetPassword';
+import AuthCallback from '@/pages/AuthCallback';
 import AppLayout from '@/components/layout/AppLayout';
 
 const queryClient = new QueryClient({
@@ -79,6 +81,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={!isAuthenticated ? <Landing /> : <Navigate to={household ? '/dashboard' : '/onboarding'} replace />} />
       <Route path="/auth" element={isAuthenticated ? <Navigate to={household ? '/dashboard' : '/onboarding'} replace /> : <Auth />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={isAuthenticated && !household ? <Onboarding /> : <Navigate to="/" replace />} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
