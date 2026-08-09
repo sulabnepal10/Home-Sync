@@ -78,6 +78,8 @@ export interface ChoreAssignment {
   completed_at: string | null;
   streak_count: number;
   notes: string;
+  is_penalty?: boolean;
+  missed_penalty_applied?: boolean;
   chore?: Chore;
   profile?: Profile;
 }
@@ -90,6 +92,7 @@ export interface Meal {
   meal_name: string;
   notes: string;
   attendees: string[];
+  meal_time: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   created_at: string;
   chef?: Profile;
 }

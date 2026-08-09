@@ -90,6 +90,18 @@ export function useLeaveHousehold() {
   });
 }
 
+export function useRemoveMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ householdId, memberId }: { householdId: string; memberId: string }) =>
+      api.delete(`/api/household/${householdId}/members/${memberId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['household'] });
+    },
+  });
+}
+
 // ============ Expenses API ============
 
 export function useExpenses(params?: {
@@ -373,6 +385,7 @@ export function useCreateMeal() {
       meal_name: string;
       notes?: string;
       attendees?: string[];
+      meal_time?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
     }) => api.post<Meal>('/api/meals', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meals'] });
@@ -390,6 +403,7 @@ export function useUpdateMeal() {
       notes?: string;
       date?: string;
       attendees?: string[];
+      meal_time?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
     }) => api.put<Meal>(`/api/meals/${data.id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meals'] });

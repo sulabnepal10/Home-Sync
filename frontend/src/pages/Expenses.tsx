@@ -51,6 +51,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useExpenses, useAddExpense, useExpenseSummary } from '@/hooks/useQueries';
 import { useAuthStore } from '@/store/useAuthStore';
+import { LoadingState, ErrorState } from '@/components/shared/QueryState';
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -85,7 +86,7 @@ export default function Expenses() {
   useFonts();
 
   const { members, household } = useAuthStore();
-  const { data: expenses } = useExpenses();
+  const { data: expenses, isLoading, isError } = useExpenses();
   const { data: expenseSummary } = useExpenseSummary();
   const addExpense = useAddExpense();
 
@@ -358,7 +359,11 @@ export default function Expenses() {
         >
           <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none">
             <CardContent className="p-0">
-              {filteredExpenses.length > 0 ? (
+              {isLoading ? (
+                <LoadingState label="Loading expenses..." />
+              ) : isError ? (
+                <ErrorState message="Failed to load expenses. Please try again." />
+              ) : filteredExpenses.length > 0 ? (
                 <div className="divide-y-2 divide-homesync-sand bg-white">
                   {filteredExpenses.map((expense, index) => (
                     <motion.div

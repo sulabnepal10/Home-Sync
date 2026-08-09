@@ -28,6 +28,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useChoreAssignments, useCompleteChore, useCreateChore, useCreateChoreAssignment, useDeleteChoreAssignment } from '@/hooks/useQueries';
 import { useAuthStore } from '@/store/useAuthStore';
+import { LoadingState, ErrorState } from '@/components/shared/QueryState';
 import { format, startOfWeek, addDays, isToday, isSameDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -58,7 +59,7 @@ export default function Chores() {
   useFonts();
 
   const { user, members, household } = useAuthStore();
-  const { data: assignments } = useChoreAssignments();
+  const { data: assignments, isLoading, isError } = useChoreAssignments();
   const completeChore = useCompleteChore();
   const createChore = useCreateChore();
   const createAssignment = useCreateChoreAssignment();
@@ -79,14 +80,16 @@ export default function Chores() {
   const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  // Calculate streak
+  // Current streak comes straight from the backend (chore_assignments.streak_count,
+  // computed on completion in choreService.computeStreakOnCompletion) rather than
+  // being recomputed here — read it off the user's most recently completed
+  // assignment instead of a naive "count consecutive completed rows" reduce,
+  // which didn't check date continuity and could overcount gaps.
   const userAssignments = assignments?.filter((a) => a.user_id === user?.id) || [];
-  const currentStreak = userAssignments.reduce((streak, assignment) => {
-    if (assignment.completed_at) {
-      return streak + 1;
-    }
-    return 0;
-  }, 0);
+  const mostRecentCompleted = userAssignments
+    .filter((a) => a.completed_at)
+    .sort((a, b) => b.assigned_date.localeCompare(a.assigned_date))[0];
+  const currentStreak = mostRecentCompleted?.streak_count ?? 0;
 
   // Calculate completion rate
   const totalAssignments = assignments?.length || 0;
@@ -304,6 +307,13 @@ export default function Chores() {
             <CardContent className="p-0 bg-white">
               <div className="divide-y-2 divide-homesync-sand">
                 {(() => {
+                  if (isLoading) {
+                    return <LoadingState label="Loading chores..." />;
+                  }
+                  if (isError) {
+                    return <ErrorState message="Failed to load chores. Please try again." />;
+                  }
+
                   const todayChores = assignments?.filter((a) =>
                     isToday(new Date(a.assigned_date))
                   ) || [];
@@ -392,7 +402,8 @@ export default function Chores() {
                             onClick={() => {
                               if (window.confirm('Delete this chore assignment?')) {
                                 deleteAssignment.mutate(assignment.id, {
-                                  onSuccess: () => toast.success('Chore removed')
+                                  onSuccess: () => toast.success('Chore removed'),
+                                  onError: (error) => toast.error(error.message || 'Failed to remove chore'),
                                 });
                               }
                             }}

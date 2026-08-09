@@ -42,6 +42,7 @@ import {
   useDeleteInventoryItem
 } from '@/hooks/useQueries';
 import { useAuthStore } from '@/store/useAuthStore';
+import { LoadingState, ErrorState } from '@/components/shared/QueryState';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -71,7 +72,7 @@ export default function Inventory() {
   useFonts();
 
   const { user, household } = useAuthStore();
-  const { data: inventory } = useInventory();
+  const { data: inventory, isLoading, isError } = useInventory();
   const { data: lowStockItems } = useLowStockItems();
 
   const createItem = useCreateInventoryItem();
@@ -264,6 +265,12 @@ export default function Inventory() {
           transition={{ delay: 0.5 }}
           className="space-y-12 pb-12"
         >
+          {isLoading ? (
+            <LoadingState label="Loading inventory..." />
+          ) : isError ? (
+            <ErrorState message="Failed to load inventory. Please try again." />
+          ) : (
+          <>
           {Object.entries(itemsByCategory).map(([category, items]) => {
             const categoryInfo = categories.find((c) => c.value === category) || {
               label: category,
@@ -352,7 +359,10 @@ export default function Inventory() {
                                 disabled={updateItem.isPending || item.quantity <= 0}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  updateItem.mutate({ id: item.id, quantity: Math.max(0, item.quantity - 1) });
+                                  updateItem.mutate(
+                                    { id: item.id, quantity: Math.max(0, item.quantity - 1) },
+                                    { onError: (error) => toast.error(error.message || 'Failed to update quantity') }
+                                  );
                                 }}
                               >
                                 <Minus className="w-3 h-3" />
@@ -364,7 +374,10 @@ export default function Inventory() {
                                 disabled={restockItem.isPending}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  restockItem.mutate({ id: item.id, quantity: 1 });
+                                  restockItem.mutate(
+                                    { id: item.id, quantity: 1 },
+                                    { onError: (error) => toast.error(error.message || 'Failed to restock item') }
+                                  );
                                 }}
                               >
                                 <Plus className="w-3 h-3" />
@@ -378,7 +391,8 @@ export default function Inventory() {
                                   e.stopPropagation();
                                   if (window.confirm(`Are you sure you want to delete ${item.name}?`)) {
                                     deleteItem.mutate(item.id, {
-                                      onSuccess: () => toast.success(`${item.name} removed`)
+                                      onSuccess: () => toast.success(`${item.name} removed`),
+                                      onError: (error) => toast.error(error.message || 'Failed to remove item'),
                                     });
                                   }
                                 }}
@@ -406,6 +420,8 @@ export default function Inventory() {
                 {searchQuery ? 'Adjust your search filters' : 'Add items to track your shared inventory'}
               </p>
             </div>
+          )}
+          </>
           )}
         </motion.div>
 

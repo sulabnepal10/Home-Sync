@@ -13,6 +13,7 @@ import {
   Monitor,
   Copy,
   Check,
+  UserMinus,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,10 +43,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTheme } from 'next-themes';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import { apiClient } from '@/lib/api';
+import { useLeaveHousehold, useRemoveMember } from '@/hooks/useQueries';
 import type { Profile } from '@/types';
 
 /* ─── Fonts & Brand ─── */
@@ -73,7 +75,10 @@ export default function Settings() {
   useFonts();
 
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
   const { user, household, members, signOut, updateUser } = useAuthStore();
+  const leaveHousehold = useLeaveHousehold();
+  const removeMember = useRemoveMember();
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [copied, setCopied] = useState(false);
@@ -87,6 +92,8 @@ export default function Settings() {
     push: true,
   });
 
+  const isAdmin = members.find((m) => m.user_id === user?.id)?.role === 'admin';
+
   const getInitials = (name: string) =>
     name?.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
 
@@ -96,6 +103,27 @@ export default function Settings() {
       setCopied(true);
       toast.success('Invite code copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleLeaveHousehold = async () => {
+    try {
+      await leaveHousehold.mutateAsync();
+      useAuthStore.setState({ household: null, members: [] });
+      toast.success('You left the household');
+      navigate('/onboarding');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to leave household');
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    if (!household) return;
+    try {
+      await removeMember.mutateAsync({ householdId: household.id, memberId });
+      toast.success(`Removed ${memberName} from the household`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to remove member');
     }
   };
 
@@ -263,10 +291,57 @@ export default function Settings() {
                               You
                             </Badge>
                           )}
+                          {isAdmin && member.user_id !== user?.id && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`Remove ${member.profile?.full_name || 'member'}`}
+                              onClick={() => handleRemoveMember(member.id, member.profile?.full_name || 'this member')}
+                              disabled={removeMember.isPending}
+                              className="rounded-none text-homesync-rust hover:bg-homesync-rust/10 hover:text-homesync-rust"
+                            >
+                              <UserMinus className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       ))}
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Appearance Section */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none">
+              <CardHeader className="border-b-2 border-homesync-sand bg-homesync-tan pb-6">
+                <CardTitle className="font-display text-2xl font-bold text-homesync-ink flex items-center gap-3">
+                  <Palette className="w-6 h-6 text-homesync-ink" />
+                  Appearance
+                </CardTitle>
+                <CardDescription className="font-mono text-[10px] uppercase tracking-widest text-homesync-muted mt-2">
+                  Choose how HomeSync looks on this device
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6 bg-white">
+                <div className="grid grid-cols-3 gap-3">
+                  {themes.map(({ value, label, icon: Icon }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setTheme(value)}
+                      aria-pressed={theme === value}
+                      className={`flex flex-col items-center gap-2 p-4 border-2 font-mono text-[10px] uppercase tracking-widest transition-colors ${
+                        theme === value
+                          ? 'border-homesync-ink bg-homesync-ink text-homesync-cream'
+                          : 'border-homesync-sand text-homesync-ink hover:bg-homesync-tan'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -356,8 +431,12 @@ export default function Settings() {
                         <AlertDialogCancel className="rounded-none border-2 border-homesync-ink bg-transparent text-homesync-ink hover:bg-white font-mono text-xs uppercase tracking-widest px-6">
                           Cancel
                         </AlertDialogCancel>
-                        <AlertDialogAction className="rounded-none bg-homesync-rust text-white hover:bg-homesync-bark font-mono text-xs uppercase tracking-widest px-6 ml-3">
-                          Leave
+                        <AlertDialogAction
+                          onClick={handleLeaveHousehold}
+                          disabled={leaveHousehold.isPending}
+                          className="rounded-none bg-homesync-rust text-white hover:bg-homesync-bark font-mono text-xs uppercase tracking-widest px-6 ml-3"
+                        >
+                          {leaveHousehold.isPending ? 'Leaving...' : 'Leave'}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>

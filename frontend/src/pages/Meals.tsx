@@ -41,6 +41,7 @@ import {
   useDeleteMeal
 } from '@/hooks/useQueries';
 import { useAuthStore } from '@/store/useAuthStore';
+import { LoadingState, ErrorState } from '@/components/shared/QueryState';
 import { format, startOfWeek, addDays, isToday, isSameDay, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -81,7 +82,7 @@ export default function Meals() {
   useFonts();
 
   const { user, members, household } = useAuthStore();
-  const { data: meals } = useMeals();
+  const { data: meals, isLoading, isError } = useMeals();
   const createMeal = useCreateMeal();
   const joinMeal = useJoinMeal();
   const leaveMeal = useLeaveMeal();
@@ -226,6 +227,11 @@ export default function Meals() {
         >
           <Card className="min-w-[800px] rounded-none border-2 border-homesync-sand bg-white shadow-none">
             <CardContent className="p-0">
+              {isLoading ? (
+                <LoadingState label="Loading meals..." />
+              ) : isError ? (
+                <ErrorState message="Failed to load meals. Please try again." />
+              ) : (
               <div className="grid grid-cols-7 divide-x-2 divide-homesync-sand">
                 {weekDays.map((day) => {
                   const dayMeals = meals?.filter((meal) =>
@@ -287,6 +293,7 @@ export default function Meals() {
                   );
                 })}
               </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -338,7 +345,8 @@ export default function Meals() {
                             onClick={() => {
                               if (window.confirm('Are you sure you want to delete this meal?')) {
                                 deleteMeal.mutate(meal.id, {
-                                  onSuccess: () => toast.success('Meal deleted')
+                                  onSuccess: () => toast.success('Meal deleted'),
+                                  onError: (error) => toast.error(error.message || 'Failed to delete meal'),
                                 });
                               }
                             }}
@@ -375,11 +383,13 @@ export default function Meals() {
                           onClick={() => {
                             if (meal.attendees?.includes(user?.id || '')) {
                               leaveMeal.mutate(meal.id, {
-                                onSuccess: () => toast.success('You left this meal')
+                                onSuccess: () => toast.success('You left this meal'),
+                                onError: (error) => toast.error(error.message || 'Failed to leave meal'),
                               });
                             } else {
                               joinMeal.mutate(meal.id, {
-                                onSuccess: () => toast.success('You joined this meal')
+                                onSuccess: () => toast.success('You joined this meal'),
+                                onError: (error) => toast.error(error.message || 'Failed to join meal'),
                               });
                             }
                           }}
@@ -589,6 +599,7 @@ export default function Meals() {
                       meal_name: mealName,
                       notes: notes,
                       attendees: selectedAttendees,
+                      meal_time: mealTime as 'breakfast' | 'lunch' | 'dinner',
                     },
                     {
                       onSuccess: () => {
@@ -597,6 +608,7 @@ export default function Meals() {
                         setMealName('');
                         setNotes('');
                         setSelectedAttendees([]);
+                        setMealTime('dinner');
                       },
                       onError: (error) => {
                         toast.error(error.message || 'Failed to plan meal');

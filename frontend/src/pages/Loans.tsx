@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuthStore } from '@/store/useAuthStore';
+import { LoadingState, ErrorState } from '@/components/shared/QueryState';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -67,7 +68,7 @@ export default function Loans() {
   useFonts();
 
   const { user, members, household } = useAuthStore();
-  const { data: loans } = useLoans();
+  const { data: loans, isLoading, isError } = useLoans();
   const { data: balances } = useLoanBalances();
   const addLoan = useAddLoan();
   const settleLoan = useSettleLoan();
@@ -346,7 +347,11 @@ export default function Loans() {
 
           <Card className="rounded-none border-2 border-homesync-sand bg-transparent shadow-none">
             <CardContent className="p-0">
-              {filteredLoans.length > 0 ? (
+              {isLoading ? (
+                <LoadingState label="Loading loans..." />
+              ) : isError ? (
+                <ErrorState message="Failed to load loans. Please try again." />
+              ) : filteredLoans.length > 0 ? (
                 <div className="divide-y-2 divide-homesync-sand bg-white">
                   <AnimatePresence>
                     {filteredLoans.map((loan, index) => (
@@ -422,7 +427,8 @@ export default function Loans() {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     settleLoan.mutate(loan.id, {
-                                      onSuccess: () => toast.success('Loan marked as settled!')
+                                      onSuccess: () => toast.success('Loan marked as settled!'),
+                                      onError: (error) => toast.error(error.message || 'Failed to settle loan'),
                                     });
                                   }}
                                 >
@@ -438,7 +444,8 @@ export default function Loans() {
                                   e.stopPropagation();
                                   if (window.confirm('Are you sure you want to delete this loan?')) {
                                     deleteLoan.mutate(loan.id, {
-                                      onSuccess: () => toast.success('Loan deleted')
+                                      onSuccess: () => toast.success('Loan deleted'),
+                                      onError: (error) => toast.error(error.message || 'Failed to delete loan'),
                                     });
                                   }
                                 }}

@@ -50,7 +50,7 @@ export default function Onboarding() {
     }
     try {
       const household = await createHousehold.mutateAsync({ name: householdName });
-      useAuthStore.setState({ household });
+      useAuthStore.getState().setHousehold(household);
       setCurrentStep(2);
     } catch {
       toast.error('Failed to create household');
@@ -64,7 +64,7 @@ export default function Onboarding() {
     }
     try {
       const household = await joinHousehold.mutateAsync(inviteCode);
-      useAuthStore.setState({ household });
+      useAuthStore.getState().setHousehold(household);
       setCurrentStep(2);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to join household');

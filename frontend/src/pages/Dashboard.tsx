@@ -39,6 +39,7 @@ import {
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatDistanceToNow, format, isToday } from 'date-fns';
 import { Link } from 'react-router-dom';
+import { LoadingState, ErrorState } from '@/components/shared/QueryState';
 
 /* ─── Fonts & Brand ─── */
 function useFonts() {
@@ -74,12 +75,15 @@ export default function Dashboard() {
   useFonts();
 
   const { user, members } = useAuthStore();
-  const { data: expenses } = useExpenses();
+  const { data: expenses, isLoading: expensesLoading, isError: expensesError } = useExpenses();
   const { data: expenseSummary } = useExpenseSummary();
   const { data: activities } = useActivityLog();
   const { data: lowStockItems } = useLowStockItems();
-  const { data: choreAssignments } = useChoreAssignments();
-  const { data: meals } = useMeals();
+  const { data: choreAssignments, isLoading: choresLoading, isError: choresError } = useChoreAssignments();
+  const { data: meals, isLoading: mealsLoading, isError: mealsError } = useMeals();
+
+  const isLoading = expensesLoading || choresLoading || mealsLoading;
+  const isError = expensesError || choresError || mealsError;
 
   const upcomingMeals = meals?.filter((meal) => new Date(meal.date) >= new Date()) || [];
   const todaysMeals = upcomingMeals.filter((meal) => isToday(new Date(meal.date)));
@@ -157,6 +161,12 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
+        {isLoading ? (
+          <LoadingState label="Loading your dashboard..." />
+        ) : isError ? (
+          <ErrorState message="Failed to load dashboard data. Please try again." />
+        ) : (
+        <>
         {/* Summary Cards */}
         <motion.div
           variants={container}
@@ -551,6 +561,8 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </motion.div>
+        </>
+        )}
 
       </div>
     </ScrollArea>
