@@ -412,7 +412,7 @@ export default function Expenses() {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="rounded-none hover:bg-homesync-tan">
+                          <Button variant="ghost" size="icon" aria-label="Expense actions" className="rounded-none hover:bg-homesync-tan">
                             <MoreHorizontal className="w-5 h-5 text-homesync-ink" />
                           </Button>
                         </DropdownMenuTrigger>

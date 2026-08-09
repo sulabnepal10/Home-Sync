@@ -243,6 +243,7 @@ export default function Settings() {
                       <Button
                         variant="outline"
                         size="icon"
+                        aria-label="Copy invite code"
                         onClick={handleCopyInviteCode}
                         className="h-12 w-12 rounded-none border-2 border-homesync-ink bg-homesync-ink text-white hover:bg-homesync-bark hover:border-homesync-bark transition-colors"
                       >

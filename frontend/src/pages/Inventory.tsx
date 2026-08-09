@@ -339,6 +339,7 @@ export default function Inventory() {
                               <Button
                                 variant="outline"
                                 size="icon"
+                                aria-label={`Decrease ${item.name} quantity`}
                                 className="h-8 w-8 rounded-none border-2 border-homesync-ink text-homesync-ink hover:bg-homesync-ink hover:text-white transition-colors"
                                 disabled={updateItem.isPending || item.quantity <= 0}
                                 onClick={(e) => {
@@ -354,6 +355,7 @@ export default function Inventory() {
                               <Button
                                 variant="outline"
                                 size="icon"
+                                aria-label={`Restock ${item.name}`}
                                 className="h-8 w-8 rounded-none border-2 border-homesync-ink text-homesync-ink hover:bg-homesync-olive hover:text-white hover:border-homesync-olive transition-colors"
                                 disabled={restockItem.isPending}
                                 onClick={(e) => {
@@ -369,6 +371,7 @@ export default function Inventory() {
                               <Button
                                 variant="outline"
                                 size="icon"
+                                aria-label={`Delete ${item.name}`}
                                 className="h-8 w-8 rounded-none border-2 border-homesync-rust text-homesync-rust hover:bg-homesync-rust hover:text-white ml-1 transition-colors"
                                 disabled={deleteItem.isPending}
                                 onClick={(e) => {

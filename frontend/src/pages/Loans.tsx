@@ -400,6 +400,7 @@ export default function Loans() {
                               <Button
                                 variant="outline"
                                 size="icon"
+                                aria-label="Delete loan"
                                 className="h-8 w-8 rounded-none border-2 border-homesync-rust text-homesync-rust hover:bg-homesync-rust hover:text-white"
                                 disabled={deleteLoan.isPending}
                                 onClick={(e) => {

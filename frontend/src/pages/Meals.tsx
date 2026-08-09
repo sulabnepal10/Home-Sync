@@ -213,6 +213,7 @@ export default function Meals() {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Previous week"
             onClick={() => setSelectedWeek(addDays(selectedWeek, -7))}
             className="rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink"
           >
@@ -224,6 +225,7 @@ export default function Meals() {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Next week"
             onClick={() => setSelectedWeek(addDays(selectedWeek, 7))}
             className="rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink"
           >
@@ -385,6 +387,7 @@ export default function Meals() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            aria-label="Delete meal"
                             className="rounded-none hover:bg-homesync-tan text-homesync-rust h-8 w-8 -mt-2 -mr-2"
                             onClick={() => {
                               if (window.confirm('Are you sure you want to delete this meal?')) {

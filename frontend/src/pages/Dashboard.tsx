@@ -144,6 +144,7 @@ export default function Dashboard() {
               <Button
                 variant="outline"
                 size="icon"
+                aria-label="Notifications"
                 className="relative rounded-none border-2 border-homesync-sand bg-transparent hover:bg-homesync-tan hover:border-homesync-ink transition-colors h-12 w-12"
               >
                 <Bell className="w-5 h-5 text-homesync-ink" />

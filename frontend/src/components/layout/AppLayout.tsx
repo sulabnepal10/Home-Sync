@@ -72,7 +72,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
       {/* Mobile header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-homesync-cream border-b-2 border-homesync-ink z-50 flex items-center justify-between px-4">
-        <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} className="rounded-none hover:bg-homesync-tan text-homesync-ink">
+        <Button variant="ghost" size="icon" aria-label="Open menu" onClick={() => setMobileOpen(true)} className="rounded-none hover:bg-homesync-tan text-homesync-ink">
           <Menu className="w-6 h-6" />
         </Button>
         <div className="flex items-center gap-3">
@@ -82,7 +82,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <span className="font-display font-black text-xl text-homesync-ink uppercase tracking-tight">HomeSync</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="rounded-none hover:bg-homesync-tan text-homesync-ink">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="rounded-none hover:bg-homesync-tan text-homesync-ink"
+          >
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </Button>
         </div>
@@ -118,7 +124,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 </div>
                 <span className="font-display font-black text-xl text-homesync-ink uppercase tracking-tight">HomeSync</span>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} className="rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink border-2 border-transparent hover:border-homesync-ink">
+              <Button variant="ghost" size="icon" aria-label="Close menu" onClick={() => setMobileOpen(false)} className="rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink border-2 border-transparent hover:border-homesync-ink">
                 <X className="w-5 h-5" />
               </Button>
             </div>
@@ -184,6 +190,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <Button
             variant="ghost"
             size="icon"
+            aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="hidden lg:flex rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink absolute right-2"
           >
@@ -250,6 +257,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <div className="p-4 border-t-2 border-homesync-sand bg-white dark:bg-homesync-tan">
           <button
             onClick={() => setCommandOpen(true)}
+            aria-label="Open command palette"
             className={cn(
               "flex items-center border-2 border-homesync-sand bg-homesync-cream hover:border-homesync-ink hover:bg-homesync-tan transition-colors text-homesync-ink rounded-none",
               sidebarOpen ? "w-full px-4 py-3 gap-3" : "w-12 h-12 justify-center mx-auto p-0"

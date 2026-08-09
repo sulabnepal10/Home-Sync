@@ -174,6 +174,7 @@ export default function Chores() {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Previous week"
             onClick={() => setSelectedWeek(addDays(selectedWeek, -7))}
             className="rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink"
           >
@@ -185,6 +186,7 @@ export default function Chores() {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Next week"
             onClick={() => setSelectedWeek(addDays(selectedWeek, 7))}
             className="rounded-none hover:bg-white dark:hover:bg-homesync-tan text-homesync-ink"
           >
@@ -381,6 +383,7 @@ export default function Chores() {
                           <Button
                             variant="outline"
                             size="icon"
+                            aria-label="Delete chore assignment"
                             className="rounded-none border-2 border-homesync-rust text-homesync-rust hover:bg-homesync-rust hover:text-white transition-colors"
                             disabled={deleteAssignment.isPending}
                             onClick={() => {
