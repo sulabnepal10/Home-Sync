@@ -15,16 +15,18 @@ export default {
         body: ['DM Sans', 'system-ui', 'sans-serif'],
       },
       colors: {
-        // Injected HomeSync Brand Colors
+        // HomeSync brand colors, sourced from CSS variables (src/index.css)
+        // so they invert automatically under .dark instead of needing a
+        // dark: variant at every call site.
         homesync: {
-          cream: '#F5F0E8',
-          tan: '#E8DFD0',
-          bark: '#3D2B1F',
-          rust: '#C84B31',
-          olive: '#2C6E49',
-          sand: '#D4B896',
-          ink: '#1A1209',
-          muted: '#7A6755',
+          cream: 'hsl(var(--hs-cream))',
+          tan: 'hsl(var(--hs-tan))',
+          bark: 'hsl(var(--hs-bark))',
+          rust: 'hsl(var(--hs-rust))',
+          olive: 'hsl(var(--hs-olive))',
+          sand: 'hsl(var(--hs-sand))',
+          ink: 'hsl(var(--hs-ink))',
+          muted: 'hsl(var(--hs-muted))',
         },
         // Existing Shadcn UI Colors
         background: 'hsl(var(--background))',

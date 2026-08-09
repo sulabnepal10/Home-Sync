@@ -87,14 +87,16 @@ const grainSvg = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='ht
 /* ─── INLINE STYLES (no Tailwind dependency for custom stuff) ─── */
 const css = `
   :root {
-    --cream:  #F5F0E8;
-    --tan:    #E8DFD0;
-    --bark:   #3D2B1F;
-    --rust:   #C84B31;
-    --olive:  #2C6E49;
-    --sand:   #D4B896;
-    --ink:    #1A1209;
-    --muted:  #7A6755;
+    /* Aliased to the shared --hs-* variables (src/index.css) so this page's
+       colors invert under dark mode instead of duplicating the palette. */
+    --cream:  hsl(var(--hs-cream));
+    --tan:    hsl(var(--hs-tan));
+    --bark:   hsl(var(--hs-bark));
+    --rust:   hsl(var(--hs-rust));
+    --olive:  hsl(var(--hs-olive));
+    --sand:   hsl(var(--hs-sand));
+    --ink:    hsl(var(--hs-ink));
+    --muted:  hsl(var(--hs-muted));
     --ff-display: 'Playfair Display', Georgia, serif;
     --ff-mono:    'DM Mono', 'Courier New', monospace;
     --ff-body:    'DM Sans', system-ui, sans-serif;
