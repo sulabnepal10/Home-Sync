@@ -7,7 +7,6 @@ import {
   Plus,
   Search,
   CheckCircle,
-  Clock,
   Users,
   TrendingUp,
   Handshake,

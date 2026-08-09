@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -9,10 +9,8 @@ import {
   UtensilsCrossed,
   Package,
   Shield,
-  Zap,
   ArrowRight,
   ArrowUpRight,
-  Star,
 } from 'lucide-react';
 
 /* ─── Google Fonts injected once ─── */

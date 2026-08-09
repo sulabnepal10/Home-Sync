@@ -71,7 +71,7 @@ const categories = [
 export default function Inventory() {
   useFonts();
 
-  const { user, household } = useAuthStore();
+  const { household } = useAuthStore();
   const { data: inventory, isLoading, isError } = useInventory();
   const { data: lowStockItems } = useLowStockItems();
 
@@ -529,7 +529,7 @@ export default function Inventory() {
                     {
                       household_id: household.id,
                       name: itemName,
-                      category: itemCategory as any,
+                      category: itemCategory as 'groceries' | 'supplies' | 'appliances',
                       quantity: Number(itemQuantity),
                       unit: itemUnit || 'units',
                       min_quantity: Number(itemMinQuantity) || 1,

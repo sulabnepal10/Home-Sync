@@ -24,5 +24,15 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
     },
+  },
+  {
+    // Vendored shadcn/ui primitives: empty extension interfaces and
+    // constant-exports-alongside-components are the upstream pattern, not
+    // something worth diverging from generated code to "fix".
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-empty-object-type': 'off',
+      'react-refresh/only-export-components': 'off',
+    },
   }
 );

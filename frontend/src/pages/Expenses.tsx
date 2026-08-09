@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Plus,
   Search,
@@ -54,7 +54,6 @@ import { useExpenses, useAddExpense, useExpenseSummary } from '@/hooks/useQuerie
 import { useAuthStore } from '@/store/useAuthStore';
 import { LoadingState, ErrorState } from '@/components/shared/QueryState';
 import { format, formatDistanceToNow } from 'date-fns';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { computeSplits } from '@/lib/splitCalculator';
 import { RecurringBillsPanel } from '@/components/shared/RecurringBillsPanel';

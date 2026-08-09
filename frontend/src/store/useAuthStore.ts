@@ -107,7 +107,7 @@ export const useAuthStore = create<AuthState>()(
                 members: householdData.members || [],
               });
             }
-          } catch (apiError) {
+          } catch {
             // If API call fails (e.g., no household yet), still set user as authenticated
             // Create a basic profile from auth metadata as fallback
             const fallbackProfile: Profile = {

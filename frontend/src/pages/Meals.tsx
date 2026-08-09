@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   UtensilsCrossed,
-  Calendar,
   Plus,
   ChefHat,
   Users,
