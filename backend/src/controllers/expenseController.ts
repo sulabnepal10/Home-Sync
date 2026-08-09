@@ -11,7 +11,7 @@ export const getExpenses = asyncHandler(async (req: Request, res: Response): Pro
     throw ApiError.unauthorized();
   }
 
-  const { household_id, category, limit, offset } = req.query;
+  const { category, limit, offset } = req.query;
 
   const supabase = getSupabaseAdmin();
 
@@ -26,11 +26,12 @@ export const getExpenses = asyncHandler(async (req: Request, res: Response): Pro
     throw ApiError.notFound('User is not in a household');
   }
 
-  // Build query
+  // Always scope to the caller's own household — never trust a client-supplied
+  // household_id, or any authenticated user could read another household's expenses.
   let query = supabase
     .from('expenses')
     .select('*, payer:profiles!payer_id(id, full_name, avatar_url), splits:expense_splits(*, profile:profiles(id, full_name, avatar_url))')
-    .eq('household_id', household_id || membership.household_id);
+    .eq('household_id', membership.household_id);
 
   if (category) {
     query = query.eq('category', category);

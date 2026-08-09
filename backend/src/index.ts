@@ -138,13 +138,8 @@ app.listen(PORT, () => {
   console.log(`  API Info: http://localhost:${PORT}/api`);
   console.log('='.repeat(50));
   console.log('');
-
-  // Warn if environment variables are missing
-  if (!config.supabase.url || !config.supabase.jwtSecret) {
-    console.warn('WARNING: Missing required environment variables!');
-    console.warn('Please check your .env file configuration.');
-    console.warn('');
-  }
+  // Required env vars are validated (and, if missing, fatal) in ./config on import,
+  // so by the time we reach here the server is guaranteed to have them.
 });
 
 // Handle unhandled rejections
