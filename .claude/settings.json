@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(node -e ' *)",
+      "Bash(node \"/tmp/claude-1000/-home-workp-Projects-Room-HomeSync-project/8fca0607-7a0b-43a6-ada5-e42a5c4dbc74/scratchpad/darkmode_pass.js\")",
+      "Bash(npx eslint *)",
+      "Bash(git ls-tree *)",
+      "Bash(python3 -)"
+    ]
+  }
+}
